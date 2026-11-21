@@ -120,6 +120,8 @@ small, .muted, .fine-print, .scope-label, .footer-note { font-size: .85rem; }
 .mark .icon, .mark > svg, .mark > img { display: block; width: 32px; height: 32px; object-fit: contain; }
 .header-tools { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: none; }
 .header-tools .desktop-upload { display: none; }
+.lang-toggle { min-height: 36px; padding: 4px 11px; border: 1px solid #c3d2e8; background: white; color: var(--deep); font-size: .78rem; font-weight: 700; letter-spacing: .01em; }
+.lang-toggle:hover { background: var(--pale); }
 .mobile-menu-toggle { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; margin-inline-end: -8px; color: var(--brand); }
 .mobile-menu-panel {
   position: absolute;

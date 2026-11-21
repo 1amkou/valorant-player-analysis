@@ -12,7 +12,7 @@ const chromium = process.argv[2] || process.env.VALORANT_CHROME || (process.plat
   ? path.join(process.env.ProgramFiles ?? 'C:\\Program Files','Google','Chrome','Application','chrome.exe') : 'chromium');
 const mime={'fonts/inter.woff2':'font/woff2','fonts/notosansjp.woff2':'font/woff2','assets/jett.png':'image/png','index.html':'text/html; charset=utf-8','app.mjs':'text/javascript; charset=utf-8','styles.css':'text/css; charset=utf-8',
   'lib/data.mjs':'text/javascript; charset=utf-8','lib/demo.mjs':'text/javascript; charset=utf-8','zip-worker.mjs':'text/javascript; charset=utf-8',
-  ...Object.fromEntries(['item-label','item-catalog','item-name-key','storage'].map(file=>[`lib/${file}.mjs`,'text/javascript; charset=utf-8']))};
+  ...Object.fromEntries(['item-label','item-catalog','item-name-key','storage','i18n'].map(file=>[`lib/${file}.mjs`,'text/javascript; charset=utf-8']))};
 const hit=[];
 const server=createServer(async (req,res)=>{
   hit.push(`${req.method} ${req.url}`);
@@ -135,6 +135,22 @@ try {
     await click('clear','main');await click('confirm-clear');await check('あなたのプレー記録');
     console.log(`${width}px: demo, filters, details, responsive navigation, clear`);
   }
+  // English localization: toggle, render, persist, and restore to Japanese.
+  {
+    await click('toggle-lang');
+    await waitFor(()=>matches('Upload data'),'English intro');
+    assert.equal(await evalJS(`document.documentElement.lang`),'en','html lang not switched');
+    await click('demo');
+    await check('Sample data');
+    await check('Total play time');
+    assert(await evalJS(`document.querySelector('.profile-copy p').textContent.includes('Last played')`),'English profile');
+    assert(!(await matches('対戦数')),'Japanese leaked into English view');
+    await click('toggle-lang');
+    await waitFor(()=>matches('サンプルデータ'),'back to Japanese');
+    assert.equal(await evalJS(`document.documentElement.lang`),'ja','html lang not restored');
+    assert.equal(await evalJS(`localStorage.getItem('valorant-lang')`),'ja','language preference not persisted');
+    console.log('Language toggle EN/JP and persistence: PASS');
+  }
   await setFile('valorant-sample');
   await waitFor(isHome,'ZIP ingestion via actual file input');
   assert(!(await matches('サンプルデータ')),'ZIP upload mistaken for demo');
@@ -181,7 +197,7 @@ try {
   assert.equal(http.length,beforeRequests,`Unexpected HTTP requests: ${http.slice(beforeRequests)}`);
   assert.equal(hit.length,beforeHits,`Unexpected server requests: ${hit.slice(beforeHits)}`);
   assert.deepEqual(pageErrors,[]);
-  assert.equal(await evalJS('localStorage.length + sessionStorage.length'),0);
+  assert(await evalJS(`sessionStorage.length===0 && Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).every(k=>k==='valorant-lang')`),'Unexpected storage usage');
   console.log('Actual ZIP input, reread, error retention, offline partial/cancel/replacement, zero post-start HTTP requests: PASS');
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   const reload=async()=>{

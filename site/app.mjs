@@ -14,18 +14,18 @@
 // under a strict Content-Security-Policy with no UI build step.
 
 import {demoDataset} from './lib/demo.mjs';
-import {modeDisplayLabel, reportLabel, kindDisplayLabel, tokyoMonth, formatDate, formatStoreDate, summarizeMatches} from './lib/data.mjs';
+import {modeDisplayLabel, reportDisplayLabel, kindDisplayLabel, tokyoMonth, formatDate, formatStoreDate, summarizeMatches} from './lib/data.mjs';
 import {itemDisplayLabel} from './lib/item-label.mjs';
 import {loadSavedData, saveData, clearSavedData} from './lib/storage.mjs';
+import {currentLang, setLang, langName, t, fmtNumber, fmtPercent, fmtMoney, fmtDuration, monthShort, monthFull} from './lib/i18n.mjs';
 
 const app = document.querySelector('#app');
 const picker = document.querySelector('#zip-file');
 const dialog = document.querySelector('#confirm');
 const announce = document.querySelector('#announce');
-const titles = {home:'ホーム', play:'プレー記録', reports:'通報', payment:'課金', store:'ストア取引', voice:'ボイスチャット', guide:'使い方', more:'その他'};
 const pages = ['home','play','reports','payment','store','voice','guide'];
 const homePages = ['reports', 'payment', 'store', 'voice', 'guide'];
-const requestUrl = 'https://support.riotgames.com/ja-jp/riot/data-request';
+const requestUrl = () => currentLang() === 'en' ? 'https://support.riotgames.com/en-us/riot/data-request' : 'https://support.riotgames.com/ja-jp/riot/data-request';
 // Lucide (ISC), with a separate Valorant mark.
 const icons = {
   brand:'<path fill="currentColor" stroke="none" d="M2 3v8.2l9.3 9.3h6.2L2 3Zm20 0-8.5 9.7h6.7l1.8-1.8V3Z"/>',
@@ -46,29 +46,6 @@ const icons = {
   swords:'<polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" /><line x1="13" x2="19" y1="19" y2="13" /><line x1="16" x2="20" y1="16" y2="20" /><line x1="19" x2="21" y1="21" y2="19" /><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5" /><line x1="5" x2="9" y1="14" y2="18" /><line x1="7" x2="4" y1="17" y2="20" /><line x1="3" x2="5" y1="19" y2="21" />',
   recent:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />'
 };
-const phases = {
-  checking:'ファイルの形式を確認中…', reading:'必要なデータを読み込み中…', normalizing:'ダッシュボードを準備中…'
-};
-const errors = {
-  broken:['ZIPを開けませんでした', 'ZIPが破損しているか、正しくダウンロードできていない可能性があります。'],
-  unsupported:['対応していないZIP形式です', 'Riotから受け取った元のZIPを、解凍せずに選んでください。'],
-  sizeLimit:['ZIPのサイズまたは構成が上限を超えています', 'ZIPファイルの大きさ、または中に含まれるファイルの一覧が、読み込み可能な範囲を超えています。'],
-  expandedLimit:['展開するデータ量が上限を超えています', 'ファイルのサイズにかかわらず、展開に必要なデータ量が多すぎるため、読み込めません。'],
-  noTarget:['VALORANTの対象データが見つかりません', 'Riotから受け取ったVALORANTの記録を含むZIPを選んでください。'],
-  unreadable:['対象データを読み込めません', '対象ファイルは見つかりましたが、解析できませんでした。'],
-  multiple:['ファイルは1つずつ開いてください', '複数のファイルから、読み込むファイルを1つ選んでください。'],
-  startup:['ZIPの読み込み機能を準備できませんでした', 'ネットワークに接続した状態でページを開き直してください。デモは引き続き利用できます。'],
-  worker:['ファイルの読み込みを完了できませんでした', 'もう一度試すか、別のファイルを選んでください。'],
-  jsonSizeLimit:['JSONのサイズが上限を超えています', '16 MiB以下の対象JSON、または元のZIPを選んでください。'],
-  invalidJson:['JSONを読み込めませんでした', 'ファイルの内容が正しいJSONになっているか確認してください。'],
-  unrecognizedJson:['対応するデータがJSONに見つかりません', 'Riotから取得した元のZIPか、対象のVALORANT JSONを選んでください。']
-};
-const zoneNote = '日時・月別集計は日本時間（JST）。日時やタイムゾーンを確認できない記録は「未記録」と表示します。';
-const numberFormat = new Intl.NumberFormat('ja-JP', {maximumFractionDigits:2});
-const percentFormat = new Intl.NumberFormat('ja-JP', {style:'percent', minimumFractionDigits:1, maximumFractionDigits:1});
-const moneyFormatters = new Map();
-const categoryLabels = {matches:'対戦履歴', reports:'通報集計', payments:'決済履歴', store:'ストア取引'};
-const resultLabels = {win:'勝ち', loss:'負け', draw:'引き分け', unknown:'不明'};
 const filtersInitial = () => ({scope:'matchmaking', period:null, mode:null, currency:null});
 // Single source of truth for the UI. `dataset` holds normalized categories, or
 // null before anything is loaded; `view` is the active screen key from `views`.
@@ -82,8 +59,8 @@ const monthOf = row => {
 };
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
 const finite = Number.isFinite;
-const number = value => numberFormat.format(value);
-const count = (value, unit = '件') => `${number(value)} ${unit}`;
+const number = fmtNumber;
+const count = (value, unit = t('unit.records')) => unit ? `${number(value)} ${unit}` : number(value);
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
 const button = (action, text, kind = '', attrs = '') => `<button type="button" class="button ${kind}" data-action="${action}" ${attrs}${(action === 'open' && workerPreparing) || (state.storageBusy && ['open','demo','clear'].includes(action)) ? ' disabled' : ''}>${text}</button>`;
 const empty = text => `<p class="empty">${escape(text)}</p>`;
@@ -92,58 +69,38 @@ const category = key => state.dataset?.[key];
 const isReady = key => category(key)?.status === 'ready';
 const rows = key => isReady(key) ? category(key).value : [];
 const brand = () => `<div class="brand"><span class="mark">${icon('brand')}</span><div><strong>VALORANT</strong><small>Player Analytics</small></div></div>`;
-const detail = (key, label = '詳細を見る', action = `go:${key}`) => button(action, `${label}${icon('next')}`, 'text-button', `aria-label="${titles[key]}の${label}"`);
-const badge = () => state.demo ? '<span class="badge sample">サンプルデータ</span>' : '';
-const heading = (title, info = '') => `<header class="headline"><div class="headline-title"><h1 id="page-title" tabindex="-1">${title}</h1>${badge()}</div>${info ? `<p>${info}</p>` : ''}</header>`;
-const timezone = () => `<p class="fine-print">${zoneNote}</p>`;
+const title = key => t('nav.' + key);
+const detail = (key, label = t('detail.view'), action = `go:${key}`) => button(action, `${label}${icon('next')}`, 'text-button', `aria-label="${t('detail.aria', {title: title(key), label})}"`);
+const badge = () => state.demo ? `<span class="badge sample">${t('badge.sample')}</span>` : '';
+const heading = (hTitle, info = '') => `<header class="headline"><div class="headline-title"><h1 id="page-title" tabindex="-1">${hTitle}</h1>${badge()}</div>${info ? `<p>${info}</p>` : ''}</header>`;
+const timezone = () => `<p class="fine-print">${t('zone.note')}</p>`;
 const totals = items => `<dl class="totals">${items.map(([label, val]) => `<div><dt>${label}</dt><dd>${val}</dd></div>`).join('')}</dl>`;
 const announceText = text => { announce.textContent = text; };
-
-function money(amount, currency) {
-  if (!finite(amount)) return '未記録';
-  if (!/^[A-Z]{3}$/.test(currency)) return `${number(amount / 100)} ${currency || '（通貨未記録）'}`;
-  if (!moneyFormatters.has(currency)) {
-    moneyFormatters.set(currency, new Intl.NumberFormat('ja-JP', {
-      style:'currency', currency, currencyDisplay:currency === 'JPY' ? 'symbol' : 'code', maximumFractionDigits:2
-    }));
-  }
-  return moneyFormatters.get(currency).format(amount / 100);
-}
-
-function duration(ms) {
-  if (!finite(ms)) return '未記録';
-  if (ms === 0) return '0分';
-  if (ms < 60_000) return `${Math.floor(ms / 1000)}秒`;
-  const minutes = Math.floor(ms / 60_000);
-  return minutes < 60 ? `${number(minutes)}分` : `${number(Math.floor(minutes / 60))}時間${minutes % 60}分`;
-}
-
-function byDate(items) {
-  return [...items].sort((a, b) => (b.time ?? -Infinity) - (a.time ?? -Infinity));
-}
-
-function matchScope() {
-  return rows('matches').filter(row => row.scope === 'matchmaking');
-}
+const currencyUnit = currency => currency || t('currency.unrecorded');
+const resultLabel = key => t('result.' + key);
+const categoryLabel = key => t('cat.' + key);
+const phaseText = key => t('phase.' + key);
+const errorText = code => [t('err.' + code + '.title'), t('err.' + code + '.copy')];
+const brandTitle = () => t('brand.title');
 
 function categoryStatus(key) {
   if (isReady(key)) return '';
-  return empty(`${categoryLabels[key]}：${category(key)?.status === 'invalid' ? '読み込めませんでした' : '未収録'}`);
+  return empty(`${categoryLabel(key)}：${category(key)?.status === 'invalid' ? t('status.invalid') : t('status.missing')}`);
 }
 
 function skipped(key) {
   const n = category(key)?.skipped;
-  return isReady(key) && n > 0 ? `<p class="fine-print">形式を確認できない ${count(n)} は集計・明細に含まれません。</p>` : '';
+  return isReady(key) && n > 0 ? `<p class="fine-print">${t('skipped', {n: count(n)})}</p>` : '';
 }
 
 function metrics(summary, unavailable = false) {
-  const nothing = '<span class="metric-none">データなし</span>';
+  const nothing = `<span class="metric-none">${t('metric.none')}</span>`;
   const metricValues = [
-    ['swords', '対戦数', unavailable ? nothing : number(summary.count)],
-    ['play', '合計試合時間', unavailable || summary.duration === null ? nothing : duration(summary.duration)],
-    ['trophy', 'コンペ勝率', unavailable || summary.competitiveRate === null ? nothing : percentFormat.format(summary.competitiveRate)]
+    ['swords', t('metric.matches'), unavailable ? nothing : number(summary.count)],
+    ['play', t('metric.duration'), unavailable || summary.duration === null ? nothing : fmtDuration(summary.duration)],
+    ['trophy', t('metric.rate'), unavailable || summary.competitiveRate === null ? nothing : fmtPercent(summary.competitiveRate)]
   ];
-  return `<dl class="metrics" aria-label="対戦指標（マッチメイキング）">${metricValues.map(([symbol, label, value]) => `<div class="card metric metric-${symbol}"><dt>${icon(symbol)}<span>${label}</span></dt><dd>${value}</dd></div>`).join('')}</dl>`;
+  return `<dl class="metrics" aria-label="${t('aria.metrics')}">${metricValues.map(([symbol, label, value]) => `<div class="card metric metric-${symbol}"><dt>${icon(symbol)}<span>${label}</span></dt><dd>${value}</dd></div>`).join('')}</dl>`;
 }
 
 function dateBuckets(items, includePayment = false) {
@@ -162,18 +119,16 @@ function dateBuckets(items, includePayment = false) {
 }
 
 function chartCopy(point, currency) {
-  const month = `${point.month.slice(0, -3)}年${Number(point.month.slice(-2))}月`;
+  const month = monthFull(point.month);
   return currency !== undefined
-    ? `${month} · 支払額 ${point.known ? money(point.sum, currency) : '未記録'}`
-    : `${month} · 対戦 ${count(point.count)} ／ 試合時間 ${duration(point.known ? point.sum : null)}`;
+    ? t('chart.copy.amount', {month, amount: point.known ? fmtMoney(point.sum, currency) : t('unrecorded')})
+    : t('chart.copy.matches', {month, count: count(point.count), duration: fmtDuration(point.known ? point.sum : null)});
 }
 
 // Line/bar charts share one geometry. The SVG uses a fixed 600x225 viewBox so
 // axis labels stay proportional at every width; month/axis text is rendered as
 // HTML outside the SVG to keep it crisp and readable on small screens.
 const chartSize = 6;
-const monthLabel = month => `${Number(month.slice(5))}月`;
-const monthFull = month => `${month.slice(0,4)}年${monthLabel(month)}`;
 function axisTop(max, minStep=1) {
   const guess = Math.max(minStep, max / 4);
   const mag = 10 ** Math.floor(Math.log10(guess));
@@ -183,7 +138,7 @@ function axisTop(max, minStep=1) {
 function chart(items, key, currency) {
   const paymentChart = currency !== undefined;
   const {months, undated} = dateBuckets(items, paymentChart);
-  if (!months.length) return empty(items.length ? '日時のある記録がありません。' : '月別に表示できる記録がありません。');
+  if (!months.length) return empty(items.length ? t('chart.noDated') : t('chart.noMonthly'));
   const chartState = state.charts[key] ??= {offset:0, point:null};
   const windowCount = Math.ceil(months.length / chartSize);
   const offset = chartState.offset = Math.min(windowCount - 1, chartState.offset);
@@ -209,24 +164,24 @@ function chart(items, key, currency) {
   const targetStart=i=>paymentChart?42+i*516/points.length:points.length===1?42:Math.max(42,x(i)-258/(points.length-1));
   const targetWidth=i=>paymentChart?516/points.length:points.length===1?516:(i===0||i===points.length-1?258:516)/(points.length-1);
   const targets=points.map((p,i)=>`<rect class="plot-target" data-plot-point="${i}" x="${targetStart(i)}" y="28" width="${targetWidth(i)}" height="170" fill="transparent"/>`).join('');
-  const paging = windowCount > 1 && key !== 'home' ? `<div class="chart-paging">${button(`chart-page:${key}:older`, '過去の月', 'secondary', offset === windowCount - 1 ? 'disabled' : '')}<span>${offset + 1} / ${windowCount}</span>${button(`chart-page:${key}:newer`, '新しい月', 'secondary', offset === 0 ? 'disabled' : '')}</div>` : '';
-  return `<div class="chart-box" data-chart="${key}">${paymentChart?'':'<p class="chart-legend"><span class="series-count">対戦数</span><span class="series-time">試合時間（時間）</span></p>'}
+  const paging = windowCount > 1 && key !== 'home' ? `<div class="chart-paging">${button(`chart-page:${key}:older`, t('chart.past'), 'secondary', offset === windowCount - 1 ? 'disabled' : '')}<span>${offset + 1} / ${windowCount}</span>${button(`chart-page:${key}:newer`, t('chart.newer'), 'secondary', offset === 0 ? 'disabled' : '')}</div>` : '';
+  return `<div class="chart-box" data-chart="${key}">${paymentChart?'':`<p class="chart-legend"><span class="series-count">${t('chart.matches')}</span><span class="series-time">${t('chart.time')}</span></p>`}
     <div class="plot-wrap">${axis(paymentChart?amountTop:countTop,'left')}${paymentChart?'':axis(amountTop,'right')}<svg class="chart" viewBox="0 0 600 225" aria-hidden="true" focusable="false">
       <defs><linearGradient id="plot-fill-${key}" x2="0%" y2="100%"><stop stop-color="#6B9EEA" stop-opacity=".19"/><stop offset="1" stop-color="#6B9EEA" stop-opacity=".015"/></linearGradient></defs>
       ${horizontal}${vertical}<line class="chart-cursor" x1="${x(selected??0)}" x2="${x(selected??0)}" y1="30" y2="195"${selected===null?' visibility="hidden"':''}/>
       ${paymentChart?bars:lines}${targets}
     </svg><div class="plot-tooltip"${selected===null?' hidden':''}>${selected===null?'':tooltipCopy(points[selected],currency)}</div></div>
-    <div class="months" role="group" aria-label="グラフの月を選択">${points.map((p,i)=>button(`point:${key}:${i}`,monthLabel(p.month),'month',`aria-label="${escape(chartCopy(p,currency))}" aria-pressed="${i===selected}"`)).join('')}</div>
+    <div class="months" role="group" aria-label="${t('aria.chartMonths')}">${points.map((p,i)=>button(`point:${key}:${i}`,monthShort(p.month),'month',`aria-label="${escape(chartCopy(p,currency))}" aria-pressed="${i===selected}"`)).join('')}</div>
     <output class="chart-value visually-hidden" aria-live="polite">${selected===null?'':escape(chartCopy(points[selected],currency))}</output>
-    ${paging}${key==='home'&&!undated?'':`<p class="fine-print">記録がある月を最大6か月ずつ表示。${undated ? `日時未記録の ${count(undated)} はグラフに含まれません。` : ''}</p>`}
+    ${paging}${key==='home'&&!undated?'':`<p class="fine-print">${t('chart.fineprint')}${undated ? ` ${t('chart.undated', {n: count(undated)})}` : ''}</p>`}
   </div>`;
 }
 function tooltipCopy(point,currency){
-  return `<strong>${monthFull(point.month)}</strong>${currency!==undefined?`<span>支払額：${escape(point.known?money(point.sum,currency):'未記録')}</span>`:`<span>対戦数：${count(point.count)}</span><span>試合時間：${duration(point.known?point.sum:null)}</span>`}`;
+  return `<strong>${monthFull(point.month)}</strong>${currency!==undefined?`<span>${t('tooltip.amount')}：${escape(point.known?fmtMoney(point.sum,currency):t('unrecorded'))}</span>`:`<span>${t('tooltip.matches')}：${count(point.count)}</span><span>${t('tooltip.time')}：${fmtDuration(point.known?point.sum:null)}</span>`}`;
 }
 
 function modeChart(summary, compact=false) {
-  if (!summary.count) return empty('表示できる対戦がありません。');
+  if (!summary.count) return empty(t('donut.none'));
   const parts = [...summary.modeCounts];
   if (!compact) parts.sort((a,b)=>b.count-a.count);
   const palette = 6;
@@ -237,14 +192,14 @@ function modeChart(summary, compact=false) {
     offset += share;
     return arc;
   }).join('');
-  const legend = parts.map(({mode, count: n}, i) => `<li><span class="dot tint-${i % palette}" aria-hidden="true"></span><span>${escape(compact?(mode==='competitive'?'コンペ':mode==='その他'?mode:modeDisplayLabel(mode)):modeDisplayLabel(mode))}</span><strong>${percentFormat.format(n / summary.count)}</strong></li>`).join('');
+  const legend = parts.map(({mode, count: n}, i) => `<li><span class="dot tint-${i % palette}" aria-hidden="true"></span><span>${escape(compact?(mode==='competitive'?t('donut.comp'):mode==='その他'?t('donut.other'):modeDisplayLabel(mode, currentLang())):modeDisplayLabel(mode, currentLang()))}</span><strong>${fmtPercent(n / summary.count)}</strong></li>`).join('');
   return `<div class="modes"><svg class="ring" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><g transform="rotate(-90 48 48)">${ring}</g></svg><ul class="legend">${legend}</ul></div>`;
 }
 
 const list = (items, row) => `<ul class="rows">${items.map(row).join('')}</ul>`;
 const matchRow = m => {
-  const result = Object.hasOwn(resultLabels, m.result) ? m.result : 'unknown';
-  return `<li><div><strong>${escape(modeDisplayLabel(m.mode))}</strong><small>${escape(formatDate(m.time))}</small></div><div class="end"><strong class="result ${result}">${resultLabels[result]}</strong><small>${duration(m.duration)}</small></div></li>`;
+  const result = m.result === 'win' || m.result === 'loss' || m.result === 'draw' ? m.result : 'unknown';
+  return `<li><div><strong>${escape(modeDisplayLabel(m.mode, currentLang()))}</strong><small>${escape(formatDate(m.time, currentLang()))}</small></div><div class="end"><strong class="result ${result}">${resultLabel(result)}</strong><small>${fmtDuration(m.duration)}</small></div></li>`;
 };
 const pageSize = 15;
 function rowList(items, key, row, none) {
@@ -253,16 +208,17 @@ function rowList(items, key, row, none) {
   const page = state.offsets[key] = Math.min(maxPage, state.offsets[key] ?? 0);
   const start = pageSize * page;
   const end = Math.min(start + pageSize, items.length);
-  return `<p class="fine-print list-summary" id="list-${key}" tabindex="-1">${count(items.length)}${maxPage ? `中 ${number(start + 1)}–${number(end)} 件を表示` : ''}</p>${list(items.slice(start, end), row)}${maxPage ? `<div class="list-paging">${button(`list:${key}:prev`, '前のページ', 'secondary', page ? '' : 'disabled')}<span>${page + 1} / ${maxPage + 1}</span>${button(`list:${key}:next`, '次のページ', 'secondary', page === maxPage ? 'disabled' : '')}</div>` : ''}`;
+  const summary = maxPage ? t('play.listSummary', {total: number(items.length), start: number(start + 1), end: number(end)}) : count(items.length);
+  return `<p class="fine-print list-summary" id="list-${key}" tabindex="-1">${summary}</p>${list(items.slice(start, end), row)}${maxPage ? `<div class="list-paging">${button(`list:${key}:prev`, t('play.prev'), 'secondary', page ? '' : 'disabled')}<span>${page + 1} / ${maxPage + 1}</span>${button(`list:${key}:next`, t('play.next'), 'secondary', page === maxPage ? 'disabled' : '')}</div>` : ''}`;
 }
 
 function reportTotal(entries) {
-  return entries === null ? 'データなし' : count(entries.reduce((sum, entry) => sum + entry.count, 0));
+  return entries === null ? t('report.nodata') : count(entries.reduce((sum, entry) => sum + entry.count, 0));
 }
 
 function reportTotals() {
   const {made, received} = category('reports').value;
-  return totals([['送った通報', reportTotal(made)], ['受けた通報', reportTotal(received)]]);
+  return totals([[t('report.made'), reportTotal(made)], [t('report.received'), reportTotal(received)]]);
 }
 
 function amounts(items, field) {
@@ -276,14 +232,13 @@ function amounts(items, field) {
 function paymentTotals() {
   const items = rows('payments');
   const groups = amounts(items, 'amountX100');
-  return totals([['総支払額', groups.length ? groups.map(([c, n]) => `<span>${escape(money(n, c))}</span>`).join('') : items.length ? '未記録' : '支払いの記録なし'], ['決済回数', count(items.length, '回')]]);
+  return totals([[t('payment.total'), groups.length ? groups.map(([c, n]) => `<span>${escape(fmtMoney(n, c))}</span>`).join('') : items.length ? t('unrecorded') : t('payment.none')], [t('payment.count'), count(items.length, t('unit.times'))]]);
 }
 
-const currencyUnit = currency => currency || '（通貨未記録）';
 function storeTotals() {
   const items = rows('store');
   const groups = amounts(items, 'amount');
-  return totals([['ゲーム内通貨の消費量', groups.length ? groups.map(([c, n]) => `<span>${count(n, escape(currencyUnit(c)))}</span>`).join('') : items.length ? '未記録' : '消費の記録なし'], ['取引件数', count(items.length)]]);
+  return totals([[t('store.total'), groups.length ? groups.map(([c, n]) => `<span>${count(n, escape(currencyUnit(c)))}</span>`).join('') : items.length ? t('unrecorded') : t('store.none')], [t('store.count'), count(items.length)]]);
 }
 
 function playDonut(summary, compact=false) {
@@ -295,21 +250,21 @@ function playDonut(summary, compact=false) {
 }
 
 function playerProfile(summary, available){
-  const last=available&&summary.lastTime!==null?formatDate(summary.lastTime):'データなし';
+  const last=available&&summary.lastTime!==null?formatDate(summary.lastTime, currentLang()):t('metric.none');
   const riotId=state.demo?'Player#JP1':category('profile')?.riotId;
-  return `<div class="player-profile">${profileAvatarUrl?`<img class="profile-avatar" src="${profileAvatarUrl}" width="84" height="84" alt="">`:'<span class="profile-avatar" aria-hidden="true"></span>'}<div class="profile-copy"><h1 id="page-title" tabindex="-1" aria-label="プレーの概要">${escape(riotId||'プレーの概要')}</h1><p>最終プレー ${escape(last)}</p>${badge()}</div></div>`;
+  return `<div class="player-profile">${profileAvatarUrl?`<img class="profile-avatar" src="${profileAvatarUrl}" width="84" height="84" alt="">`:'<span class="profile-avatar" aria-hidden="true"></span>'}<div class="profile-copy"><h1 id="page-title" tabindex="-1" aria-label="${t('profile.title')}">${escape(riotId||t('profile.title'))}</h1><p>${t('profile.last')} ${escape(last)}</p>${badge()}</div></div>`;
 }
 
 function reportStack(){
   const made=category('reports').value.made;
   if(!made?.length)return '';
-  const segments=[{name:'チート',count:0},{name:'ランク操作',count:0},{name:'不適切行為',count:0},{name:'その他',count:0}];
+  const segments=[{name:t('report.stack.cheat'),count:0},{name:t('report.stack.rank'),count:0},{name:t('report.stack.behavior'),count:0},{name:t('report.stack.other'),count:0}];
   const behavior=new Set(['ABUSING_GLITCHES','COMMS_ABUSE_TEXT','COMMS_ABUSE_VOICE','INAPPROPRIATE_TEAM_NAME','OFFENSIVE_NAME','SABOTAGING_TEAM']);
   for(const {code,count:n} of made){const k=code.toUpperCase();segments[k==='CHEATING'?0:k==='RANK_MANIPULATION'?1:behavior.has(k)?2:3].count+=n;}
   const total=segments.reduce((sum,p)=>sum+p.count,0);
   if(!total)return '';
   let x=0;
-  return `<div class="report-stack"><svg class="report-bar" viewBox="0 0 400 26" preserveAspectRatio="none" aria-label="送った通報の理由別割合" role="img">${segments.map((p,i)=>{const w=400*p.count/total;const rect=p.count?`<rect class="report-tone-${i}" x="${x}" y="0" width="${w}" height="26"><title>${p.name}：${count(p.count)}</title></rect>`:'';x+=w;return rect;}).join('')}</svg><ul class="report-legend">${segments.map((p,i)=>`<li title="${p.name}：${count(p.count)}"><span class="report-tone-${i}"></span>${p.name}</li>`).join('')}</ul></div>`;
+  return `<div class="report-stack"><svg class="report-bar" viewBox="0 0 400 26" preserveAspectRatio="none" aria-label="${t('report.stack.aria')}" role="img">${segments.map((p,i)=>{const w=400*p.count/total;const rect=p.count?`<rect class="report-tone-${i}" x="${x}" y="0" width="${w}" height="26"><title>${p.name}：${count(p.count)}</title></rect>`:'';x+=w;return rect;}).join('')}</svg><ul class="report-legend">${segments.map((p,i)=>`<li title="${p.name}：${count(p.count)}"><span class="report-tone-${i}"></span>${p.name}</li>`).join('')}</ul></div>`;
 }
 
 function miniChart(items, type){
@@ -328,14 +283,23 @@ function miniChart(items, type){
   const points=[...series].sort(([a],[b])=>a.localeCompare(b)).slice(-6);
   const top=Math.max(1,...points.map(([,n])=>n));
   const step=400/points.length;
-  const unit=payment?`支払額（${currency}）`:'取引件数（時差不明の記録はZIP記載月）';
+  const unit=payment?t('payment.monthly',{currency}):t('store.monthly');
   const multipleYears=new Set(points.map(([month])=>month.slice(0,4))).size>1;
-  return `<figure class="mini-chart" aria-label="月別${escape(unit)}"><svg class="mini-plot" viewBox="0 0 400 60" role="img" aria-label="月別${escape(unit)}"><path class="chart-grid" d="M0 4H400M0 29H400M0 54H400"/>${points.map(([month,n],i)=>{const h=n/top*50,x=(i+.5)*step,w=Math.min(36,step*.65);return `<rect class="chart-bar" x="${x-w/2}" y="${54-h}" width="${w}" height="${h}" rx="2"><title>${monthFull(month)}：${escape(payment?money(n,currency):count(n))}</title></rect>`;}).join('')}</svg><div class="mini-months" aria-hidden="true">${points.map(([month])=>`<span>${multipleYears?`${month.slice(2,4)}年`:''}${monthLabel(month)}</span>`).join('')}</div>${payment&&currencies.length>1?`<figcaption>${escape(currency)} の月別支払額</figcaption>`:''}</figure>`;
+  const monthTick = month => multipleYears ? `${month.slice(2,4)} ${monthShort(month)}` : monthShort(month);
+  return `<figure class="mini-chart" aria-label="${t('mini.monthly')}${escape(unit)}"><svg class="mini-plot" viewBox="0 0 400 60" role="img" aria-label="${t('mini.monthly')}${escape(unit)}"><path class="chart-grid" d="M0 4H400M0 29H400M0 54H400"/>${points.map(([month,n],i)=>{const h=n/top*50,x=(i+.5)*step,w=Math.min(36,step*.65);return `<rect class="chart-bar" x="${x-w/2}" y="${54-h}" width="${w}" height="${h}" rx="2"><title>${monthFull(month)}：${escape(payment?fmtMoney(n,currency):count(n))}</title></rect>`;}).join('')}</svg><div class="mini-months" aria-hidden="true">${points.map(([month])=>`<span>${escape(monthTick(month))}</span>`).join('')}</div>${payment&&currencies.length>1?`<figcaption>${escape(currency)} ${t('payment.monthlyShort')}</figcaption>`:''}</figure>`;
 }
 
 function recentMatchRow(m){
-  const result=Object.hasOwn(resultLabels,m.result)?m.result:'unknown';
-  return `<li><span class="recent-icon" aria-hidden="true">${icon('recent')}</span><time>${escape(formatDate(m.time))}</time><span class="recent-mode">${escape(modeDisplayLabel(m.mode))}</span><strong class="result ${result}">${resultLabels[result]}</strong><span class="recent-duration">${duration(m.duration)}</span></li>`;
+  const result = m.result === 'win' || m.result === 'loss' || m.result === 'draw' ? m.result : 'unknown';
+  return `<li><span class="recent-icon" aria-hidden="true">${icon('recent')}</span><time>${escape(formatDate(m.time, currentLang()))}</time><span class="recent-mode">${escape(modeDisplayLabel(m.mode, currentLang()))}</span><strong class="result ${result}">${resultLabel(result)}</strong><span class="recent-duration">${fmtDuration(m.duration)}</span></li>`;
+}
+
+function matchScope() {
+  return rows('matches').filter(row => row.scope === 'matchmaking');
+}
+
+function byDate(items) {
+  return [...items].sort((a, b) => (b.time ?? -Infinity) - (a.time ?? -Infinity));
 }
 
 // Home composes the profile, three KPI cards, and the overview cards. Each card
@@ -346,13 +310,13 @@ function home() {
   return `<div class="home-overview">${playerProfile(summary,matchesAvailable)}${metrics(summary,!matchesAvailable)}</div>
     <div class="cards home-grid">
       <div class="play-overview">
-        ${card('プレー記録',matchesAvailable?chart(items,'home')+skipped('matches'):categoryStatus('matches'),detail('play'),'play-card')}
-        ${card('モード別の内訳',matchesAvailable?playDonut(summary,true):categoryStatus('matches'),'','mode-card')}
+        ${card(title('play'),matchesAvailable?chart(items,'home')+skipped('matches'):categoryStatus('matches'),detail('play'),'play-card')}
+        ${card(t('home.modes'),matchesAvailable?playDonut(summary,true):categoryStatus('matches'),'','mode-card')}
       </div>
-      ${card('通報',isReady('reports')?reportTotals()+reportStack()+skipped('reports'):categoryStatus('reports'),detail('reports'),'report-card')}
-      ${card('課金',isReady('payments')?paymentTotals()+miniChart(rows('payments'),'payment')+skipped('payments'):categoryStatus('payments'),detail('payment'),'payment-card')}
-      ${card('ストア取引',isReady('store')?storeTotals()+miniChart(rows('store'),'store')+skipped('store'):categoryStatus('store'),detail('store'),'store-card')}
-      ${card('最近の試合',matchesAvailable?(items.length?`<ul class="rows recent-matches">${byDate(items).slice(0,3).map(recentMatchRow).join('')}</ul>`:empty('マッチメイキングの記録はありません。')):categoryStatus('matches'),detail('play','もっと見る','go-list'),'recent-card')}
+      ${card(title('reports'),isReady('reports')?reportTotals()+reportStack()+skipped('reports'):categoryStatus('reports'),detail('reports'),'report-card')}
+      ${card(title('payment'),isReady('payments')?paymentTotals()+miniChart(rows('payments'),'payment')+skipped('payments'):categoryStatus('payments'),detail('payment'),'payment-card')}
+      ${card(title('store'),isReady('store')?storeTotals()+miniChart(rows('store'),'store')+skipped('store'):categoryStatus('store'),detail('store'),'store-card')}
+      ${card(t('recent.title'),matchesAvailable?(items.length?`<ul class="rows recent-matches">${byDate(items).slice(0,3).map(recentMatchRow).join('')}</ul>`:empty(t('recent.none'))):categoryStatus('matches'),detail('play',t('recent.more'),'go-list'),'recent-card')}
     </div>`;
 }
 
@@ -362,128 +326,147 @@ function select(key, label, options, selected = state.filters[key]) {
 }
 
 function play() {
-  const intro = heading('プレー記録', '試合の推移・モード別内訳・明細');
-  if (!isReady('matches')) return intro + card('対戦履歴', categoryStatus('matches'));
+  const intro = heading(title('play'), t('play.info'));
+  if (!isReady('matches')) return intro + card(categoryLabel('matches'), categoryStatus('matches'));
   const filter = state.filters;
   const items = rows('matches');
   const scoped = items.filter(m => m.scope === filter.scope);
   const displayed = byDate(scoped.filter(m => (filter.period === null || monthOf(m) === filter.period) && (filter.mode === null || m.mode === filter.mode)));
   const summary = summarizeMatches(displayed);
-  const modes = [...new Set(scoped.map(m => m.mode))].map(m => [m, modeDisplayLabel(m)]).sort((a, b) => a[1].localeCompare(b[1], 'ja'));
+  const modes = [...new Set(scoped.map(m => m.mode))].map(m => [m, modeDisplayLabel(m, currentLang())]).sort((a, b) => a[1].localeCompare(b[1], currentLang()));
   const months = [...new Set(scoped.map(monthOf).filter(Boolean))].sort().reverse();
-  const monthOptions = months.map(m => [m, `${m.slice(0, -3)}年${Number(m.slice(-2))}月`]);
-  const scopes = [['matchmaking', 'マッチメイキング'], ['other', 'その他のプレー']];
-  if (items.some(m => m.scope === 'unknown')) scopes.push(['unknown', '種類が不明なプレー']);
-  const filters = `<div class="filters">${select('scope', '記録の種類', scopes)}${select('period', '期間', [[null, '全期間'], ...monthOptions])}${select('mode', 'モード', [[null, 'すべて'], ...modes])}${button('reset', 'リセット', 'secondary')}</div>`;
-  const none = filter.period !== null || filter.mode !== null ? '条件に一致する試合がありません。絞り込みを変更するか、リセットしてください。' : 'この種類の対戦記録はありません。';
-  return `${intro}${card('絞り込み', filters + skipped('matches'))}${metrics(summary)}
-    <div class="cards"><div class="cols">${card('月別の対戦数・試合時間', chart(displayed, 'play'))}${card('モード別の内訳', modeChart(summary))}</div>
-    <section class="card"><h2 id="match-list-title" tabindex="-1">試合一覧</h2>${rowList(displayed, 'matches', matchRow, none)}</section></div>${timezone()}`;
+  const monthOptions = months.map(m => [m, monthFull(m)]);
+  const scopes = [['matchmaking', t('play.matchmaking')], ['other', t('play.other')]];
+  if (items.some(m => m.scope === 'unknown')) scopes.push(['unknown', t('play.unknown')]);
+  const filters = `<div class="filters">${select('scope', t('play.scope'), scopes)}${select('period', t('play.period'), [[null, t('play.all')], ...monthOptions])}${select('mode', t('play.mode'), [[null, t('play.modeAll')], ...modes])}${button('reset', t('play.reset'), 'secondary')}</div>`;
+  const none = filter.period !== null || filter.mode !== null ? t('play.noneFiltered') : t('play.none');
+  return `${intro}${card(t('play.filters'), filters + skipped('matches'))}${metrics(summary)}
+    <div class="cards"><div class="cols">${card(t('play.monthly'), chart(displayed, 'play'))}${card(t('home.modes'), modeChart(summary))}</div>
+    <section class="card"><h2 id="match-list-title" tabindex="-1">${t('play.list')}</h2>${rowList(displayed, 'matches', matchRow, none)}</section></div>${timezone()}`;
 }
 
 function reports() {
-  const intro = heading('通報', 'ZIPに収録された集計です。試合の期間フィルターは適用されません。');
-  if (!isReady('reports')) return intro + card('通報集計', categoryStatus('reports'));
+  const intro = heading(title('reports'), t('reports.info'));
+  if (!isReady('reports')) return intro + card(categoryLabel('reports'), categoryStatus('reports'));
   const {made, received} = category('reports').value;
-  const box = entries => entries === null ? empty('データなし（件数は記録されていません）。') : `<p class="lead-number">${reportTotal(entries)}</p>${entries.length ? list([...entries].sort((a, b) => b.count - a.count), r => `<li><span>${escape(reportLabel(r.code))}</span><strong class="end">${count(r.count)}</strong></li>`) : ''}`;
-  return `${intro}<div class="cols">${card('送った通報', box(made))}${card('受けた通報', box(received))}</div>${skipped('reports')}`;
+  const box = entries => entries === null ? empty(t('report.nodataCopy')) : `<p class="lead-number">${reportTotal(entries)}</p>${entries.length ? list([...entries].sort((a, b) => b.count - a.count), r => `<li><span>${escape(reportDisplayLabel(r.code, currentLang()))}</span><strong class="end">${count(r.count)}</strong></li>`) : ''}`;
+  return `${intro}<div class="cols">${card(t('report.made'), box(made))}${card(t('report.received'), box(received))}</div>${skipped('reports')}`;
 }
 
 function payment() {
-  const intro = heading('課金', '支払額は通貨ごとに表示します。');
-  if (!isReady('payments')) return intro + card('決済履歴', categoryStatus('payments'));
+  const intro = heading(title('payment'), t('payment.info'));
+  if (!isReady('payments')) return intro + card(categoryLabel('payments'), categoryStatus('payments'));
   const items = rows('payments');
   const currencies = [...new Set(items.map(row => row.currency))].sort((a, b) => a.localeCompare(b));
   const currency = state.filters.currency ?? currencies[0];
-  const labels = {JPY:'日本円（JPY）', USD:'米ドル（USD）'};
-  const paymentRow = p => `<li><div><strong>${escape(money(p.amountX100, p.currency))}</strong><small>${escape(formatDate(p.time))}</small></div><div class="end"><small>付与された通貨</small>${p.granted.length ? p.granted.map(g => `<strong>${finite(g.amount) ? count(g.amount, escape(currencyUnit(g.currency))) : '未記録'}</strong>`).join('') : '<strong>未記録</strong>'}</div></li>`;
-  const graph = currencies.length ? `<div class="filters">${select('currency', 'グラフの通貨', currencies.map(c => [c, Object.hasOwn(labels, c) ? labels[c] : currencyUnit(c)]), currency)}</div>${chart(items.filter(p => p.currency === currency), 'payment', currency)}` : empty('月別に表示できる決済記録がありません。');
-  return `${intro}<div class="cards">${card('課金の概要', paymentTotals() + skipped('payments'))}${card('月別の支払額', graph)}${card('決済明細', rowList(byDate(items), 'payments', paymentRow, '決済の記録はありません。'))}</div>${timezone()}`;
+  const labels = {JPY: t('payment.jpy'), USD: t('payment.usd')};
+  const paymentRow = p => `<li><div><strong>${escape(fmtMoney(p.amountX100, p.currency))}</strong><small>${escape(formatDate(p.time, currentLang()))}</small></div><div class="end"><small>${t('payment.granted')}</small>${p.granted.length ? p.granted.map(g => `<strong>${finite(g.amount) ? count(g.amount, escape(currencyUnit(g.currency))) : t('unrecorded')}</strong>`).join('') : `<strong>${t('unrecorded')}</strong>`}</div></li>`;
+  const graph = currencies.length ? `<div class="filters">${select('currency', t('payment.currency'), currencies.map(c => [c, Object.hasOwn(labels, c) ? labels[c] : currencyUnit(c)]), currency)}</div>${chart(items.filter(p => p.currency === currency), 'payment', currency)}` : empty(t('payment.noMonthly'));
+  return `${intro}<div class="cards">${card(t('payment.summary'), paymentTotals() + skipped('payments'))}${card(t('payment.monthlyTitle'), graph)}${card(t('payment.details'), rowList(byDate(items), 'payments', paymentRow, t('payment.noRecords')))}</div>${timezone()}`;
 }
 
 function store() {
-  const intro = heading('ストア取引', '消費量が未記録の取引も明細に表示します。');
-  if (!isReady('store')) return intro + card('取引履歴', categoryStatus('store'));
-  const storeRow = p => `<li><div><strong>${escape(itemDisplayLabel(p))}</strong><small>${escape(formatStoreDate(p))} · ${escape(kindDisplayLabel(p.kind))}</small></div><strong class="end store-amount">${finite(p.amount) ? count(p.amount, escape(currencyUnit(p.currency))) : '未記録'}</strong></li>`;
-  const note = '<p class="fine-print">タイムゾーンがわかる日時は日本時間（JST）で表示します。不明な日時はZIPに記載された時刻のまま表示します。</p>';
-  return `${intro}<div class="cards">${card('ストア取引の概要', storeTotals() + skipped('store'))}${card('取引明細', rowList(byDate(rows('store')), 'store', storeRow, '取引の記録はありません。'))}</div>${note}`;
+  const intro = heading(title('store'), t('store.info'));
+  if (!isReady('store')) return intro + card(categoryLabel('store'), categoryStatus('store'));
+  const storeRow = p => `<li><div><strong>${escape(itemDisplayLabel(p, currentLang()))}</strong><small>${escape(formatStoreDate(p, currentLang()))} · ${escape(kindDisplayLabel(p.kind, currentLang()))}</small></div><strong class="end store-amount">${finite(p.amount) ? count(p.amount, escape(currencyUnit(p.currency))) : t('unrecorded')}</strong></li>`;
+  return `${intro}<div class="cards">${card(t('store.summary'), storeTotals() + skipped('store'))}${card(t('store.details'), rowList(byDate(rows('store')), 'store', storeRow, t('store.noRecords')))}</div><p class="fine-print">${t('store.note')}</p>`;
 }
 
 function voice(){
   const record=category('voice');
   const status=record?.status;
-  const message=status==='ready'?'ボイスチャットの文字起こしは記録されていません。':status==='unsupported'?'文字起こしファイルはありますが、内容の形式を確認できていないため表示できません。':status==='invalid'?'ボイスチャットのデータを読み込めませんでした。':'ボイスチャットのデータは収録されていません。';
-  return heading('ボイスチャット')+card('文字起こし',`<div class="voice-info">${empty(message)}<p class="fine-print">音声の再生や他のユーザーへの送信は行いません。</p></div>`);
+  const message=status==='ready'?t('voice.ready'):status==='unsupported'?t('voice.unsupported'):status==='invalid'?t('voice.invalid'):t('voice.missing');
+  return heading(title('voice'))+card(t('voice.section'),`<div class="voice-info">${empty(message)}<p class="fine-print">${t('voice.fineprint')}</p></div>`);
 }
 
 function guide(){
-  const steps=`<ol class="guide-steps"><li><h3>Riot Gamesにデータを申請する</h3><p>公式ページにアクセスし、VALORANTで使っているRiotアカウントでログインして、案内に沿って申請します。</p><a class="button secondary guide-link" href="${requestUrl}" target="_blank" rel="noopener noreferrer">Riot公式のデータ申請ページを開く ${icon('next')}</a></li><li><h3>レポートを端末に保存する</h3><p>Riot Gamesから受け取ったZIPをそのままダウンロードしてください。解凍は不要です。</p></li><li><h3>このサイトでファイルを選ぶ</h3><p>「データをアップロード」からZIPまたは対象のJSONを選びます。PCではドラッグ＆ドロップでも開けます。</p>${button('open',`${icon('upload')} ファイルを選ぶ`,'secondary')}</li></ol>`;
-  return `<div class="guide-view">${heading('使い方','Riot Gamesのデータを取得し、この端末で確認する方法')}
-    ${card('データの取得から表示まで',steps)}
-    <div class="cards">${card('個人データの扱い','<p><strong>選んだファイルの中身は、お使いのスマートフォンやパソコンの中だけで読み取り・集計します。</strong></p><p>ファイルや表示された集計結果が、このサイトや外部のサーバーへ送信されることはありません。他の人にも公開されません。</p><p>読み取った表示用データは、このブラウザ内に保存されるため、ページを閉じたり再読み込みしたりしても残ります。同じ端末・ブラウザを使う人は閲覧できるため、共有端末ではご注意ください。「その他」のデータ管理から消去できます。元のファイルは保存・削除されません。</p><p>※ サイト自体を開くときやRiot公式の申請ページを利用するときは、インターネット通信が必要です。</p><p>開示データの内容によっては、一部の項目が表示されません。プロフィールの画像はイメージです。</p>')}</div></div>`;
+  const steps=`<ol class="guide-steps"><li><h3>${t('guide.step1.title')}</h3><p>${t('guide.step1.copy')}</p><a class="button secondary guide-link" href="${requestUrl()}" target="_blank" rel="noopener noreferrer">${t('guide.step1.link')} ${icon('next')}</a></li><li><h3>${t('guide.step2.title')}</h3><p>${t('guide.step2.copy')}</p></li><li><h3>${t('guide.step3.title')}</h3><p>${t('guide.step3.copy')}</p>${button('open',`${icon('upload')} ${t('guide.step3.button')}`,'secondary')}</li></ol>`;
+  return `<div class="guide-view">${heading(title('guide'),t('guide.info'))}
+    ${card(t('guide.section.title'),steps)}
+    <div class="cards">${card(t('guide.privacy.title'),`<p><strong>${t('guide.privacy.1')}</strong></p><p>${t('guide.privacy.2')}</p><p>${t('guide.privacy.3')}</p><p>${t('guide.privacy.4')}</p><p>${t('guide.privacy.5')}</p>`)}</div></div>`;
 }
 
 function more() {
-  const menu=homePages.map(key=>button(`go:${key}`,`${icon(key)}<span>${titles[key]}</span>${icon('next')}`,'menu-item')).join('');
-  const manage=`<p class="muted">表示用データはこの端末のブラウザ内に保存され、再読み込み後も表示されます。別のファイルは読み込みが成功したときだけ入れ替えます。共有端末では利用後に消去してください。</p><div class="actions">${button('open','データをアップロード','secondary')}${button('clear','表示データを消去','danger')}</div>`;
-  return `${heading('その他','カテゴリ別の詳細とデータ管理')}<div class="cols">${card('カテゴリ',`<div class="menu">${menu}</div>`)}${card('データ管理',manage)}</div>`;
+  const menu=homePages.map(key=>button(`go:${key}`,`${icon(key)}<span>${title(key)}</span>${icon('next')}`,'menu-item')).join('');
+  const manage=`<p class="muted">${t('more.manageCopy')}</p><div class="actions">${button('open',t('more.upload'),'secondary')}${button('clear',t('more.clear'),'danger')}</div>`;
+  return `${heading(title('more'),t('more.info'))}<div class="cols">${card(t('more.categories'),`<div class="menu">${menu}</div>`)}${card(t('more.manage'),manage)}</div>`;
 }
 
 function intro() {
   return `<div class="intro"><section class="intro-card card" id="drop-target">
-    <h1 id="page-title" tabindex="-1">あなたのプレー記録を、手元で。</h1>
-    <p class="intro-copy">Riot Gamesから受け取ったZIPや対象のJSONを選ぶと、VALORANTのプレー記録や取引履歴を確認できます。</p>
-    <div class="actions intro-actions">${button('open',`${icon('upload')}${state.error?'別のファイルを選ぶ':'データをアップロード'}`,'primary')}${button('demo','デモを見る','secondary')}${button('go:guide','使い方','text-button')}</div>
-    <div class="privacy">${icon('shield')}<div><strong>解凍不要・ファイルは送信されません</strong><p>表示用データは再読み込みできるよう、この端末のブラウザ内に保存されます。共有端末では利用後に消去してください。</p><p>端末の「ファイル」や「ダウンロード」からZIPまたはJSONを選びます。</p><p class="drop-copy">PCでは、この画面にファイルをドラッグ＆ドロップできます。</p></div></div>
-  </section><p class="footer-note">Riot Gamesの公式サービスではありません</p></div>`;
+    <h1 id="page-title" tabindex="-1">${t('intro.title')}</h1>
+    <p class="intro-copy">${t('intro.copy')}</p>
+    <div class="actions intro-actions">${button('open',`${icon('upload')}${state.error?t('intro.uploadOther'):t('intro.upload')}`,'primary')}${button('demo',t('intro.demo'),'secondary')}${button('go:guide',t('intro.guide'),'text-button')}</div>
+    <div class="privacy">${icon('shield')}<div><strong>${t('intro.privacy.title')}</strong><p>${t('intro.privacy.save')}</p><p>${t('intro.privacy.how')}</p><p class="drop-copy">${t('intro.privacy.drop')}</p></div></div>
+  </section><p class="footer-note">${t('footer.unofficial')}</p></div>`;
 }
 
 function loading() {
-  const title = state.dataset || state.view==='guide' ? '<h2 id="loading-title" tabindex="-1">読み込み中</h2>' : '<h1 id="page-title" tabindex="-1">読み込み中</h1>';
-  return `<section class="card loading">${title}<div class="progress" aria-hidden="true"></div>
-    <p id="load-phase" role="status" aria-atomic="true">${phases[state.reading.phase]}</p>
-    <p class="muted">${state.dataset ? '完了するまで現在の表示は変わりません。' : 'ファイルは端末内で処理され、送信されません。'}</p>
-    <div class="actions">${button('cancel', '読み込みを取り消す', 'secondary')}${button('open', '別のファイルを選ぶ')}</div></section>`;
+  const hTitle = state.dataset || state.view==='guide' ? `<h2 id="loading-title" tabindex="-1">${t('loading.title')}</h2>` : `<h1 id="page-title" tabindex="-1">${t('loading.title')}</h1>`;
+  return `<section class="card loading">${hTitle}<div class="progress" aria-hidden="true"></div>
+    <p id="load-phase" role="status" aria-atomic="true">${phaseText(state.reading.phase)}</p>
+    <p class="muted">${state.dataset ? t('loading.keep') : t('loading.new')}</p>
+    <div class="actions">${button('cancel', t('loading.cancel'), 'secondary')}${button('open', t('loading.other'))}</div></section>`;
 }
 
 function errorBlock() {
   if (!state.error) return '';
-  const [title, copy] = errors[state.error];
-  return `<section class="alert" aria-labelledby="error-title"><h2 id="error-title" tabindex="-1">${title}</h2><p>${copy}${state.dataset ? ' 前の表示はそのままです。' : ''}</p>${state.dataset ? `<div class="actions">${button('open', '別のファイルを選ぶ', 'secondary')}${button('dismiss', '閉じる')}</div>` : ''}</section>`;
+  const [errTitle, copy] = errorText(state.error);
+  return `<section class="alert" aria-labelledby="error-title"><h2 id="error-title" tabindex="-1">${errTitle}</h2><p>${copy}${state.dataset ? ` ${t('error.keep')}` : ''}</p>${state.dataset ? `<div class="actions">${button('open', t('loading.other'), 'secondary')}${button('dismiss', t('error.dismiss'))}</div>` : ''}</section>`;
 }
 
 function nav(keys, css) {
-  return `<nav aria-label="画面ナビゲーション" class="${css}">${keys.map(key => {
+  return `<nav aria-label="${t('aria.nav')}" class="${css}">${keys.map(key => {
     const current = state.view === key ? 'aria-current="page"' : key === 'more' && css === 'bottom' && homePages.includes(state.view) ? 'aria-current="location"' : '';
-    return button(`go:${key}`, `${icon(key)}<span>${titles[key]}</span>`, 'nav-item', current);
+    return button(`go:${key}`, `${icon(key)}<span>${title(key)}</span>`, 'nav-item', current);
   }).join('')}</nav>`;
 }
 
 const views = {home,play,reports,payment,store,voice,guide,more};
 function sidebar(){
-  return `<aside class="rail">${brand()}${nav(pages,'side-nav')}<div class="rail-bottom">${button('go:more','データ管理','text-button')}<p class="footer-note">Riot Gamesの公式サービスではありません</p></div></aside>`;
+  return `<aside class="rail">${brand()}${nav(pages,'side-nav')}<div class="rail-bottom">${button('go:more',t('sidebar.manage'),'text-button')}<p class="footer-note">${t('footer.unofficial')}</p></div></aside>`;
+}
+function langToggle(){
+  const target = currentLang() === 'ja' ? 'en' : 'ja';
+  const label = currentLang() === 'ja' ? 'English' : '日本語';
+  return button('toggle-lang', label, 'lang-toggle', `aria-label="${currentLang() === 'ja' ? 'Switch to English' : '日本語に切り替え'}"`);
 }
 function appHeader(active){
   const menuKeys=active?['home','play',...homePages,'more']:['home','guide'];
-  return `<header class="top"><div class="top-in"><button type="button" class="brand-link" data-action="go:home" aria-label="ホームへ戻る">${brand()}</button><div class="header-tools">${button('open',`${icon('upload')}データをアップロード`,'secondary desktop-upload')}${button('toggle-menu',icon('menu'),'mobile-menu-toggle','aria-label="メニュー" aria-controls="mobile-menu" aria-expanded="'+state.menuOpen+'"')}</div></div>
-    <div id="mobile-menu" class="mobile-menu-panel"${state.menuOpen?'':' hidden'}>${nav(menuKeys,'menu')} ${button('open',`${icon('upload')}データをアップロード`,'secondary')}</div></header>`;
+  return `<header class="top"><div class="top-in"><button type="button" class="brand-link" data-action="go:home" aria-label="${t('header.home')}">${brand()}</button><div class="header-tools">${langToggle()}${button('open',`${icon('upload')}${t('header.upload')}`,'secondary desktop-upload')}${button('toggle-menu',icon('menu'),'mobile-menu-toggle','aria-label="'+t('header.menu')+'" aria-controls="mobile-menu" aria-expanded="'+state.menuOpen+'"')}</div></div>
+    <div id="mobile-menu" class="mobile-menu-panel"${state.menuOpen?'':' hidden'}>${nav(menuKeys,'menu')} ${button('open',`${icon('upload')}${t('header.upload')}`,'secondary')}</div></header>`;
 }
 function render() {
   const active=Boolean(state.dataset);
   chartModels.clear();
   filterOptions.clear();
   app.classList.toggle('loaded',active);
-  document.title=active||state.view==='guide'?`${titles[state.view]}｜VALORANT プレイヤー分析`:'VALORANT プレイヤー分析';
-  const notice=active&&state.view==='home'&&Object.keys(categoryLabels).some(key=>!isReady(key))?'<p class="notice">一部のデータを表示できません。読めたカテゴリを表示しています。</p>':'';
+  document.documentElement.lang = currentLang();
+  document.title=active||state.view==='guide'?`${title(state.view)}｜${brandTitle()}`:brandTitle();
+  const notice=active&&state.view==='home'&&Object.keys({matches:1,reports:1,payments:1,store:1}).some(key=>!isReady(key))?`<p class="notice">${t('notice.partial')}</p>`:'';
   const view=active||state.view==='guide'?views[state.view]():state.reading?'':intro();
-  const storageStatus=state.storageWarning?`<p class="alert" role="alert">${escape(state.storageWarning)}</p>`:state.storageBusy?'<p class="notice" role="status">この端末にデータを保存しています…</p>':'';
-  app.innerHTML=`<a class="skip" href="#content">本文へ移動</a>${appHeader(active)}${active?sidebar():''}<div class="body"><main id="content" tabindex="-1">${state.reading?loading():''}${errorBlock()}${storageStatus}${notice}${view}</main></div>${active?nav(['home','play','more'],'bottom'):''}`;
+  const storageStatus=state.storageWarning?`<p class="alert" role="alert">${escape(state.storageWarning)}</p>`:state.storageBusy?`<p class="notice" role="status">${t('storage.saving')}</p>`:'';
+  app.innerHTML=`<a class="skip" href="#content">${t('skip')}</a>${appHeader(active)}${active?sidebar():''}<div class="body"><main id="content" tabindex="-1">${state.reading?loading():''}${errorBlock()}${storageStatus}${notice}${view}</main></div>${active?nav(['home','play','more'],'bottom'):''}`;
+  localizeDialog();
 }
 
 function focus(target = '#page-title', scroll = false) {
   const element = document.querySelector(target);
   if (scroll) window.scrollTo(0, 0);
   element?.focus({preventScroll:scroll});
+}
+
+// The clear-confirmation dialog lives outside #app, so its static text is
+// refreshed on every render to match the current language.
+function localizeDialog() {
+  const titleEl = document.querySelector('#confirm-title');
+  const copyEl = document.querySelector('#confirm-copy');
+  const backEl = document.querySelector('#confirm [data-action="close"]');
+  const confirmEl = document.querySelector('#confirm [data-action="confirm-clear"]');
+  if (titleEl) titleEl.textContent = t('confirm.title');
+  if (copyEl) copyEl.textContent = t('confirm.copy');
+  if (backEl) backEl.textContent = t('confirm.back');
+  if (confirmEl) confirmEl.textContent = t('confirm.clear');
 }
 
 function routeUrl(view) {
@@ -515,13 +498,12 @@ window.addEventListener('popstate', () => {
 
 function showDataset(dataset = null, demo = false) {
   stopWorker();
-  moneyFormatters.clear();
   Object.assign(state, {dataset, demo, error:null, reading:null, view:'home', loadedAt:dataset&&!demo?Date.now():null, menuOpen:false, filters:filtersInitial(), charts:{}, offsets:{}});
   picker.value = '';
   history.replaceState(dataset ? {view:'home'} : null, '', routeUrl('home'));
   render();
   focus('#page-title', true);
-  announceText(demo ? 'サンプルデータを表示しました。' : dataset ? 'ファイルの読み込みが完了しました。' : '表示データを消去しました。');
+  announceText(demo ? t('announce.demo') : dataset ? t('announce.loaded') : t('announce.cleared'));
 }
 
 // Persist a freshly imported dataset. Saving happens after the UI is shown so a
@@ -535,14 +517,12 @@ async function acceptDataset(dataset) {
   } catch {
     let previousCleared=false;
     try { await clearSavedData(); previousCleared=true; } catch {}
-    state.storageWarning=previousCleared
-      ? '端末に保存できませんでした。現在のデータは表示できますが、再読み込みすると消えます。'
-      : '端末に保存できませんでした。再読み込みすると以前のデータが表示される場合があります。ブラウザのサイトデータ設定も確認してください。';
+    state.storageWarning=previousCleared ? t('storage.fail.current') : t('storage.fail.stale');
   } finally {
     state.storageBusy=false;
     render();
     if(state.storageWarning)announceText(state.storageWarning);
-    else announceText('表示用データをこの端末に保存しました。');
+    else announceText(t('storage.saved'));
   }
 }
 
@@ -556,7 +536,7 @@ async function clearDataset() {
     showDataset();
   } catch {
     state.storageBusy=false;
-    state.storageWarning='ブラウザ内のデータを消去できませんでした。再度お試しいただくか、ブラウザのサイトデータを削除してください。';
+    state.storageWarning=t('storage.clear.fail');
     render();
     announceText(state.storageWarning);
   }
@@ -581,10 +561,10 @@ function fail(code) {
   stopWorker();
   if(code==='sizeLimit'&&state.reading?.json)code='jsonSizeLimit';
   state.reading = null;
-  state.error = Object.hasOwn(errors, code) ? code : 'worker';
+  state.error = ['broken','unsupported','sizeLimit','expandedLimit','noTarget','unreadable','multiple','startup','worker','jsonSizeLimit','invalidJson','unrecognizedJson'].includes(code) ? code : 'worker';
   render();
   focus('#error-title', true);
-  announceText(errors[state.error].join(' ') + (state.dataset ? ' 前の表示はそのままです。' : ''));
+  announceText(errorText(state.error).join(' ') + (state.dataset ? ` ${t('error.keep')}` : ''));
 }
 
 function makeWorker() {
@@ -592,10 +572,10 @@ function makeWorker() {
   worker = instance;
   instance.addEventListener('message', ({data}) => {
     if (worker !== instance || !state.reading || !data) return;
-    if (data.type === 'progress' && Object.hasOwn(phases, data.phase)) {
+    if (data.type === 'progress' && ['checking','reading','normalizing'].includes(data.phase)) {
       state.reading.phase = data.phase;
       const phase = document.querySelector('#load-phase');
-      if (phase && phase.textContent !== phases[data.phase]) phase.textContent = phases[data.phase];
+      if (phase && phase.textContent !== phaseText(data.phase)) phase.textContent = phaseText(data.phase);
     } else if (data.type === 'success') {
       void acceptDataset(data.dataset);
     } else if (data.type === 'error') {
@@ -659,7 +639,7 @@ function cancelReading() {
   picker.value = '';
   render();
   focus(state.dataset || state.view==='guide' ? '#page-title' : '.intro [data-action="open"]', true);
-  announceText(state.dataset ? '読み込みを取り消しました。前の表示はそのままです。' : '読み込みを取り消しました。');
+  announceText(state.dataset ? t('announce.cancel.keep') : t('announce.cancel'));
 }
 
 picker.addEventListener('change', () => {
@@ -696,12 +676,12 @@ window.addEventListener('drop', e => {
   if (dialog.open) return;
   const files = e.dataTransfer.files;
   if (files.length > 1) {
-    if (state.reading) announceText(errors.multiple.join(' '));
+    if (state.reading) announceText(errorText('multiple').join(' '));
     else {
       state.error = 'multiple';
       render();
       focus('#error-title', true);
-      announceText(errors.multiple.join(' '));
+      announceText(errorText('multiple').join(' '));
     }
   } else startFile(files[0]);
 });
@@ -722,7 +702,7 @@ app.addEventListener('change', e => {
   render();
   focus(`[data-filter="${key}"]`);
   const updated = key === 'currency' ? document.querySelector('[data-chart="payment"] output')?.textContent : document.querySelector('#list-matches')?.textContent;
-  announceText(updated || (key === 'currency' ? '月別に表示できる決済記録がありません。' : '条件に一致する試合はありません。'));
+  announceText(updated || (key === 'currency' ? t('announce.noPayment') : t('announce.noMatches')));
 });
 
 function updatePlot(key,i,commit=false){
@@ -775,6 +755,15 @@ function toggleMenu(open=!state.menuOpen){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.menuOpen)toggleMenu(false);});
 
+// UI-only language preference; stored separately from imported data.
+const LANG_KEY = 'valorant-lang';
+function loadLang() {
+  try { const saved = localStorage.getItem(LANG_KEY); if (saved === 'ja' || saved === 'en') setLang(saved); } catch {}
+}
+function persistLang() {
+  try { localStorage.setItem(LANG_KEY, currentLang()); } catch {}
+}
+
 document.addEventListener('click', e => {
   const b = e.target.closest('button[data-action]');
   if (!b){
@@ -786,6 +775,14 @@ document.addEventListener('click', e => {
   switch (action) {
     case 'open': if(state.menuOpen)toggleMenu(false); picker.click(); break;
     case 'toggle-menu': toggleMenu(); break;
+    case 'toggle-lang': {
+      setLang(currentLang() === 'ja' ? 'en' : 'ja');
+      persistLang();
+      render();
+      focus('.lang-toggle');
+      announceText(currentLang() === 'ja' ? '表示言語を日本語に切り替えました。' : 'Switched to English.');
+      break;
+    }
     case 'demo': showDataset(demoDataset, true); break;
     case 'cancel': cancelReading(); break;
     case 'clear': dialog.showModal(); break;
@@ -800,7 +797,7 @@ document.addEventListener('click', e => {
       delete state.charts.play;
       render();
       focus('[data-action="reset"]');
-      announceText('絞り込みをリセットしました。');
+      announceText(t('announce.reset'));
       break;
     }
     case 'point': updatePlot(arg, Number(point),true); break;
@@ -828,6 +825,7 @@ app.addEventListener('click', e => {
   focus('#content');
 });
 
+loadLang();
 if(location.hash==='#guide')state.view='guide';
 history.replaceState({view:state.view}, '', routeUrl(state.view));
 // Boot sequence: restore any previously saved dataset (with a shape check so a
@@ -839,7 +837,7 @@ async function initialize() {
       state.dataset=saved.dataset;
     }
   } catch {
-    state.storageWarning='ブラウザ内の保存データを確認できませんでした。保存設定をご確認ください。';
+    state.storageWarning=t('storage.read.fail');
   }
   render();
   void prepareWorker();

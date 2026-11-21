@@ -17,31 +17,57 @@ const modes = new Map([
   ['abilitydraftarena','ガントレット: グリッチ'], ['newmap','新マップ専用'],
   ['notapplicable','該当なし'], ['unknown','不明'],
 ]);
+const modesEn = new Map([
+  ['competitive','Competitive'], ['unrated','Unrated'], ['swiftplay','Swiftplay'],
+  ['spikerush','Spike Rush'], ['deathmatch','Deathmatch'], ['teamdeathmatch','Team Deathmatch'],
+  ['escalation','Escalation'], ['replication','Replication'], ['premier','Premier'],
+  ['snowball','Snowball Fight'], ['custom','Custom'], ['range','The Range'], ['tutorial','Tutorial'],
+  ['skirmish2v2','Skirmish: 2v2'],
+  ['skirmishascension1v1','Skirmish 1v1: Ascension'], ['skirmishascension2v2','Skirmish 2v2: Ascension'],
+  ['abilitydraftarena','Gauntlet: Glitch'], ['newmap','New map'],
+  ['notapplicable','Not applicable'], ['unknown','Unknown'],
+]);
 const reports = new Map(Object.entries({
   ABUSING_GLITCHES:'グリッチの悪用', AFK:'離席・放置', BOTTING:'ボット使用', CHEATING:'チート行為',
   COMMS_ABUSE_TEXT:'テキストチャットでの迷惑行為', COMMS_ABUSE_VOICE:'ボイスチャットでの迷惑行為',
   INAPPROPRIATE_TEAM_NAME:'不適切なチーム名', OFFENSIVE_NAME:'不適切なプレイヤー名',
   RANK_MANIPULATION:'ランク操作', SABOTAGING_TEAM:'味方への妨害',
 }));
+const reportsEn = new Map(Object.entries({
+  ABUSING_GLITCHES:'Abusing glitches', AFK:'AFK', BOTTING:'Botting', CHEATING:'Cheating',
+  COMMS_ABUSE_TEXT:'Text chat abuse', COMMS_ABUSE_VOICE:'Voice chat abuse',
+  INAPPROPRIATE_TEAM_NAME:'Inappropriate team name', OFFENSIVE_NAME:'Offensive name',
+  RANK_MANIPULATION:'Rank manipulation', SABOTAGING_TEAM:'Sabotaging team',
+}));
 const kinds = new Map(Object.entries({ purchase:'購入', purchased:'購入', gift:'ギフト', gifted:'ギフト', giftpurchase:'ギフト購入',
   giftreceived:'受け取ったギフト', giftsent:'送ったギフト', unlock:'アンロック', unlocked:'アンロック', refund:'返金' }));
+const kindsEn = new Map(Object.entries({ purchase:'Purchase', purchased:'Purchase', gift:'Gift', gifted:'Gift', giftpurchase:'Gift purchase',
+  giftreceived:'Received gift', giftsent:'Sent gift', unlock:'Unlock', unlocked:'Unlock', refund:'Refund' }));
 const key = s => s.toLowerCase().replace(/[^a-z0-9]/g,'');
 const hasCode = code => typeof code === 'string' && code.trim().length > 0;
-const knownModeLabel = code => hasCode(code) ? modes.get(modeCode(code)) : undefined;
-const knownKindLabel = code => hasCode(code) ? kinds.get(key(code)) : undefined;
-export const modeLabel = code => knownModeLabel(code) ?? code;
+const knownModeLabel = (code, lang) => hasCode(code) ? (lang === 'en' ? modesEn : modes).get(modeCode(code)) : undefined;
+const knownKindLabel = (code, lang) => hasCode(code) ? (lang === 'en' ? kindsEn : kinds).get(key(code)) : undefined;
+// Canonical label helpers default to Japanese for internal callers and tests.
+export const modeLabel = code => knownModeLabel(code, 'ja') ?? code;
 export const reportLabel = code => reports.get(code.trim().toUpperCase()) ?? code;
-export const kindLabel = code => knownKindLabel(code) ?? code;
-// Display helpers explain unfamiliar codes in Japanese without hiding the export value.
-export const modeDisplayLabel = code => knownModeLabel(code) ?? (hasCode(code) ? `不明なモード（${code}）` : '不明');
-export const kindDisplayLabel = code => knownKindLabel(code) ?? (hasCode(code) && code !== '未記録' ? `不明な取引種別（${code}）` : '未記録');
-const tzParts = new Intl.DateTimeFormat('ja-JP', {timeZone:'Asia/Tokyo', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23'});
-function parts(time) {
+export const kindLabel = code => knownKindLabel(code, 'ja') ?? code;
+// Display helpers explain unfamiliar codes without hiding the export value.
+export const modeDisplayLabel = (code, lang = 'ja') => knownModeLabel(code, lang) ?? (hasCode(code) ? (lang === 'en' ? `Unknown mode (${code})` : `不明なモード（${code}）`) : (lang === 'en' ? 'Unknown' : '不明'));
+export const reportDisplayLabel = (code, lang = 'ja') => (lang === 'en' ? reportsEn : reports).get(code.trim().toUpperCase()) ?? code;
+export const kindDisplayLabel = (code, lang = 'ja') => knownKindLabel(code, lang) ?? (hasCode(code) && code !== '未記録' && code !== 'Unrecorded' ? (lang === 'en' ? `Unknown type (${code})` : `不明な取引種別（${code}）`) : (lang === 'en' ? 'Unrecorded' : '未記録'));
+const dateFmt = {
+  ja: new Intl.DateTimeFormat('ja-JP', {timeZone:'Asia/Tokyo', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23'}),
+  en: new Intl.DateTimeFormat('en-US', {timeZone:'Asia/Tokyo', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23'}),
+};
+function parts(time, lang = 'ja') {
   return typeof time === 'number' && Number.isFinite(time) && Math.abs(time) <= 8.64e15
-    ? Object.fromEntries(tzParts.formatToParts(time).map(p=>[p.type,p.value])) : null;
+    ? Object.fromEntries(dateFmt[lang === 'en' ? 'en' : 'ja'].formatToParts(time).map(p=>[p.type,p.value])) : null;
 }
 export function tokyoMonth(time) { const p=parts(time); return p ? `${p.year}-${p.month}` : null; }
-export function formatDate(time) { const p=parts(time); return p ? `${p.year}/${p.month}/${p.day} ${p.hour}:${p.minute}` : '未記録'; }
+export function formatDate(time, lang = 'ja') {
+  const p = parts(time, lang);
+  return p ? (lang === 'en' ? `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}` : `${p.year}/${p.month}/${p.day} ${p.hour}:${p.minute}`) : (lang === 'en' ? 'Unrecorded' : '未記録');
+}
 
 const obj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 const text = (x,max=180) => typeof x==='string'&&x.trim().length ? x.trim().slice(0,max) : null;
@@ -165,8 +191,11 @@ function storeRow(row){
     itemType:text(f.get('item_type'),50),transactionSource:text(f.get('transaction_source'),100),
     currency:storeCurrencyNames.get(key(text(unit)??''))??currency(unit),amount:nonneg(amount)};
 }
-export function formatStoreDate(row){
-  return row.timeUnzoned ? `${row.timeUnzoned}（タイムゾーン不明）` : formatDate(row.time);
+export function formatStoreDate(row, lang = 'ja'){
+  if (row.timeUnzoned) {
+    return lang === 'en' ? `${row.timeUnzoned.replaceAll('/', '-')} (time zone unknown)` : `${row.timeUnzoned}（タイムゾーン不明）`;
+  }
+  return formatDate(row.time, lang);
 }
 function list(value, names){
   if(Array.isArray(value))return value;
