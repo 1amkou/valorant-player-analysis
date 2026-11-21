@@ -37,4 +37,6 @@ npm run test:browser  # browser test (set VALORANT_CHROME if needed)
 
 Japanese/English names for skins, levels, variants, cards, buddies, and sprays use public metadata from [Valorant-API](https://valorant-api.com/) (unofficial). In-game names are the property of Riot Games. The dictionary ships with the site, which makes no external API calls while you browse. Unknown names are shown with their original text. Run `node scripts/update-item-catalog.mjs` only when you want to refresh the public dictionary — it never reads a personal ZIP.
 
+The Noto Sans JP font is bundled as a subset of the characters the site actually uses. If you add or change text, regenerate it with `node scripts/update-fonts.mjs`.
+
 GitHub Pages serves only [`site/`](<site/>). Before publishing, verify on a real device and with a real ZIP, then decide the public URL, display name, and Riot Developer Portal product registration. Never commit, publish, or share real data.

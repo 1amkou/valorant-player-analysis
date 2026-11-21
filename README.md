@@ -37,4 +37,6 @@ npm run test:browser  # ブラウザテスト（必要に応じて VALORANT_CHRO
 
 スキン・レベル・ヴァリアント、カード、バディー、スプレー等の日英名称は [Valorant-API](https://valorant-api.com/)（非公式）の公開メタデータを利用します。ゲーム内名称はRiot Gamesに帰属します。辞書はサイトに同梱し、閲覧中に外部APIへ接続しません。名称が未登録の場合は原文付きで表示します。公開データの辞書を更新する場合だけ `node scripts/update-item-catalog.mjs` を実行します。このコマンドは個人のZIPを読みません。
 
+フォント（Noto Sans JP）はサイト内で使う文字だけを抽出して同梱しています。文言を追加・変更した場合は `node scripts/update-fonts.mjs` で再生成してください。
+
 GitHub Pagesの配信物は [`site/`](<site/>) のみ。公開前に実機と実ZIPを確認し、公開先・表示名・Riot Developer Portalへの製品登録を決めます。実データをコミット、配信、共有しないでください。

@@ -10,7 +10,7 @@ import {fileURLToPath} from 'node:url';
 // Set VALORANT_CHROME (or pass the binary as argv[2]) on the OS running Node.
 const chromium = process.argv[2] || process.env.VALORANT_CHROME || (process.platform==='win32'
   ? path.join(process.env.ProgramFiles ?? 'C:\\Program Files','Google','Chrome','Application','chrome.exe') : 'chromium');
-const mime={'fonts/inter.woff2':'font/woff2','fonts/notosansjp.woff2':'font/woff2','assets/jett.png':'image/png','assets/nisyon.png':'image/png','index.html':'text/html; charset=utf-8','app.mjs':'text/javascript; charset=utf-8','styles.css':'text/css; charset=utf-8',
+const mime={'fonts/inter.woff2':'font/woff2','assets/jett.png':'image/png','assets/nisyon.png':'image/png','index.html':'text/html; charset=utf-8','app.mjs':'text/javascript; charset=utf-8','styles.css':'text/css; charset=utf-8',
   'lib/data.mjs':'text/javascript; charset=utf-8','lib/demo.mjs':'text/javascript; charset=utf-8','zip-worker.mjs':'text/javascript; charset=utf-8',
   ...Object.fromEntries(['item-label','item-catalog','item-name-key','storage','i18n'].map(file=>[`lib/${file}.mjs`,'text/javascript; charset=utf-8']))};
 const hit=[];
@@ -18,8 +18,9 @@ const server=createServer(async (req,res)=>{
   hit.push(`${req.method} ${req.url}`);
   const prefix='/review/';
   const key=req.url===prefix?'index.html':req.url.startsWith(prefix)?req.url.slice(prefix.length):'';
-  if(req.method!=='GET'||!Object.hasOwn(mime,key)){res.writeHead(404).end();return;}
-  try {res.writeHead(200,{'Content-Type':mime[key],'Cache-Control':'no-store'}).end(await readFile(new URL(`../site/${key}`,import.meta.url)));}
+  const type=mime[key] ?? (/^fonts\/notosansjp-\d+\.woff2$/.test(key) ? 'font/woff2' : null);
+  if(req.method!=='GET'||!type){res.writeHead(404).end();return;}
+  try {res.writeHead(200,{'Content-Type':type,'Cache-Control':'no-store'}).end(await readFile(new URL(`../site/${key}`,import.meta.url)));}
   catch {res.destroy();}
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
