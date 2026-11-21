@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Riot Gamesの開示ZIPを端末内で読み込み、VALORANTのプレー記録・通報・課金・ストア取引を日本語で確認できます。">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; worker-src blob:; img-src 'self' data: blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title>VALORANT プレイヤー分析</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%23245eb6'/%3E%3Cpath d='M10 27l6-7 5 3 9-12m-6 0h6v6M10 32h20' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <div id="app">
+    <header class="top"><div class="top-in"><strong>VALORANT プレイヤー分析</strong></div></header>
+    <main id="content"><section class="card intro">
+      <h1>あなたのプレー記録を、手元で。</h1>
+      <p>このサイトはブラウザ上で動作します。JavaScriptを有効にして、HTTPSまたは localhost から開いてください。</p>
+    </section></main>
+  </div>
+  <input type="file" id="zip-file" accept=".zip,.json,application/zip,application/x-zip-compressed,application/json" hidden>
+  <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-copy">
+    <h2 id="confirm-title">表示データを消去しますか？</h2>
+    <p id="confirm-copy">画面のデータと、このブラウザに保存した表示用データを消去します。元のZIPやJSONは削除しません。</p>
+    <div class="actions">
+      <button class="button secondary" type="button" data-action="close" autofocus>戻る</button>
+      <button class="button danger" type="button" data-action="confirm-clear">消去する</button>
+    </div>
+  </dialog>
+  <div id="announce" class="visually-hidden" role="status" aria-atomic="true"></div>
+</body>
+</html>

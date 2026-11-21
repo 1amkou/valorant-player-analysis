@@ -1,0 +1,14 @@
+node_modules/
+.DS_Store
+Thumbs.db
+private/
+local-data/
+# Default-deny local copies of personal data and exports; keep only named fixtures.
+*.[zZ][iI][pP]
+!samples/valorant-sample.zip
+!samples/valorant-sample-partial.zip
+!samples/valorant-sample-broken.zip
+!samples/valorant-sample-no-target.zip
+*.[jJ][sS][oO][nN]
+!/package.json
+!/package-lock.json

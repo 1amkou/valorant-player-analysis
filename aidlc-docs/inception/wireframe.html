@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'">
+<title>VALORANT プレイヤー分析｜画面試作</title>
+<style>
+:root{color-scheme:light;--bg:#f2f5fb;--paper:#fff;--ink:#172438;--muted:#4b5d76;--blue:#245eb6;--blueDeep:#17478f;--pale:#eaf2ff;--line:#dce5f1;--shadow:0 5px 20px #253c6510;font:16px/1.55 system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,select{font:inherit}button{cursor:pointer}button:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:3px}button,select,summary{-webkit-tap-highlight-color:transparent}button{min-height:44px;border:1px solid transparent;padding:.55rem .85rem;border-radius:10px;background:none;color:var(--blueDeep);font-weight:650}button:hover{background:var(--pale)}.primary{background:var(--blue);color:#fff}.primary:hover{background:var(--blueDeep)}.secondary{border-color:#b4c8e7;background:#fff}.danger{color:#a02a37;border-color:#efc3ca}.danger:hover{background:#fff0f1}h1,h2,h3,p{margin:0}h1{font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.24}h2{font-size:1.2rem;line-height:1.35}h3{font-size:1rem}.muted,small{color:var(--muted)}.muted,.badge,small,dt,.eyebrow{font-size:.875rem}.eyebrow{font-weight:750;color:var(--blueDeep);letter-spacing:.05em}.icon{width:22px;height:22px;flex:none;display:inline-block;vertical-align:middle}.mark{display:grid;place-items:center;width:40px;height:40px;flex:none;background:var(--blue);color:white;border-radius:12px}.brand{display:flex;gap:10px;align-items:center;line-height:1.25}.brand strong,.brand small{display:block}.top{background:#fff;border-bottom:1px solid var(--line)}.top-in{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;min-height:64px}.top .badge{font-size:.73rem;flex:none}.badge{display:inline-block;padding:.16rem .55rem;border-radius:999px;background:var(--pale);color:var(--blueDeep);font-weight:700}.rail{display:none}main{max-width:1120px;margin:0 auto;padding:20px 14px 36px}.loaded main{padding-bottom:calc(90px + env(safe-area-inset-bottom))}.intro{max-width:640px;margin:clamp(12px,6vh,64px) auto 0}.card,.intro-card{background:var(--paper);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow);padding:16px;min-width:0}.intro-card{padding:clamp(18px,4vw,32px)}.intro-card h1{margin:.45rem 0 .8rem}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.intro .actions button{flex:1 1 180px}.instructions{margin-top:16px;padding:12px;border-radius:11px;background:var(--pale)}.instructions strong{display:block}.pc-only{display:none}.footer-note{margin:16px 0 0;text-align:center}.headline{margin:2px 0 16px}.headline p,.headline .badge{margin-top:6px}.cards{display:grid;gap:12px;margin-top:12px}.card>h2,.card>h3,.card-head{margin-bottom:10px}.card-head{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}.card-head button{font-size:.875rem;padding-inline:.45rem}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.metric{padding:10px 5px;text-align:center}.metric .icon{color:var(--blue);display:block;margin:0 auto 3px;width:20px;height:20px}.metric dt{font-size:clamp(.68rem,2.9vw,.875rem);line-height:1.3;min-height:1.3em}.metric dd{font-variant-numeric:tabular-nums;margin:4px 0 0;font-size:clamp(.9rem,4vw,1.65rem);font-weight:800;overflow-wrap:anywhere}.metric dd small{font-size:.7em}.chart{width:100%;height:auto;display:block;max-height:200px}.months{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px}.months button{font-size:.78rem;padding:.15rem 0}.months button[aria-pressed=true],nav button[aria-current=page]{background:var(--pale);color:var(--blueDeep);font-weight:800}.chart-value{display:block;background:var(--pale);padding:6px 9px;border-radius:8px;font-size:.875rem;color:var(--blueDeep)}.mode-layout{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}.ring{display:grid;place-items:center;flex:none;width:100px;height:100px;border-radius:50%}.ring::after{content:"";width:62px;height:62px;background:#fff;border-radius:50%}.legend{list-style:none;margin:0;padding:0;flex:1;min-width:145px;max-width:340px}.legend li{display:flex;align-items:center;gap:6px;font-size:.83rem;padding:5px 0}.legend strong{margin-left:auto;white-space:nowrap}.dot{width:9px;height:9px;border-radius:50%;flex:none}.segment{height:10px;display:flex;overflow:hidden;background:#e0eaf9;border-radius:8px;margin-top:12px}.totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}.totals dd{margin:3px 0 0;font-weight:800;font-size:1.12rem;overflow-wrap:anywhere}.totals dd span{display:block}.rows{list-style:none;padding:0;margin:0}.rows li{padding:10px 0;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;overflow-wrap:anywhere}.rows li:last-child{border-bottom:0}.rows strong,.rows small{display:block}.rows .end{text-align:right;min-width:70px}.win{color:#08614e}.loss{color:#9b293c}.alert{border-radius:12px;padding:12px 14px;background:#fff0ec;border:1px solid #f1c7bf;color:#802f25;margin:0 0 12px}.alert p{margin-top:4px}.status{border-radius:12px;padding:12px 14px;background:var(--pale);color:var(--blueDeep);margin:0 0 12px}.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:12px}.filters label{flex:1 1 120px;min-width:0;font-size:.84rem;color:var(--muted);font-weight:650}.filters select{display:block;width:100%;min-height:44px;border:1px solid #b4c8e7;border-radius:8px;color:var(--ink);background:#fff;padding:0 5px}.menu button{display:flex;align-items:center;gap:10px;text-align:left;width:100%}.menu button span:last-child{margin-left:auto}.bottom{position:fixed;z-index:2;inset:auto 0 0;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#fff;border-top:1px solid var(--line);padding:4px 8px calc(4px + env(safe-area-inset-bottom))}.bottom button{display:grid;place-items:center;gap:2px;font-size:.76rem;padding:4px;line-height:1.2}.bottom .icon{width:20px;height:20px}.empty{color:var(--muted);padding:7px 0;font-size:.9rem}.hint{margin-top:8px}.progress{height:8px;margin:14px 0;background:var(--line);border-radius:20px;overflow:hidden}.progress::before{content:"";display:block;height:100%;width:38%;background:var(--blue);animation:scan 1.25s ease-in-out infinite alternate}@keyframes scan{to{transform:translateX(165%)}}@media(prefers-reduced-motion:reduce){.progress::before{animation:none}}dialog{width:min(calc(100% - 28px),490px);max-height:90dvh;overflow:auto;border:1px solid var(--line);border-radius:16px;padding:18px;color:var(--ink);box-shadow:0 20px 80px #162f5a44}dialog::backdrop{background:#17243866}dialog h2{margin-bottom:8px}dialog .menu{margin-top:8px}.cols{display:grid;gap:12px}
+@media(min-width:600px){.top-in,main{padding-left:24px;padding-right:24px}.metrics{gap:12px}.metric{padding:14px 10px}.card{padding:20px}}
+@media(min-width:1024px){.loaded .top{padding-left:215px}.top-in{max-width:1120px;margin:auto}.loaded .body{margin-left:215px}.rail{display:flex;flex-direction:column;gap:6px;position:fixed;inset:0 auto 0 0;width:215px;z-index:3;background:white;border-right:1px solid var(--line);padding:18px 13px;overflow:auto}.rail .brand{margin:0 0 16px}.rail nav button{display:flex;align-items:center;text-align:left;width:100%;gap:8px;margin-bottom:3px}.rail .footer-note{margin-top:auto;text-align:left}.bottom{display:none}.loaded main{padding-bottom:36px}.home-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.home-grid>*{grid-column:span 3}.home-grid>*:first-child{grid-column:span 4}.home-grid>*:nth-child(2){grid-column:span 2}.cols{grid-template-columns:repeat(2,minmax(0,1fr))}.pc-only{display:block}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+<script>
+'use strict';
+const app = document.querySelector('#app');
+const dialog = document.querySelector('#dialog');
+const paths = {
+  brand:'<path d="M4 17l4-5 4 3 7-9M15 6h4v4"/><path d="M4 21h16"/>', home:'<path d="m3 10 9-7 9 7v10H3zM9 20v-6h6v6"/>', play:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>', reports:'<path d="M12 3 2 20h20zM12 9v4m0 3v1"/>', payment:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18m-14 5h3"/>', store:'<path d="m3 4 2 2 3 10h10l3-8H6m3 12h1m6 0h1"/>', upload:'<path d="M12 16V4m-5 5 5-5 5 5M4 15v5h16v-5"/>', shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM8 12l3 3 5-6"/>', target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>', trophy:'<path d="M8 3h8v6a4 4 0 0 1-8 0zM8 5H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4m-4 2v6m-5 1h10"/>'
+};
+const icon = name => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]}</svg>`;
+const titles = {home:'ホーム',play:'プレー記録',reports:'通報',payment:'課金',store:'ストア取引',more:'その他'};
+const modes = ['コンペティティブ','アンレート','スイフトプレイ'];
+const colors = ['#2865c2','#79a5e2','#c4d8f5'];
+const phases = ['ZIPの構成を確認中…','必要なデータを読み込み中…','ダッシュボードを準備中…'];
+const scenarios = {success:'読み込み成功',partial:'一部のデータが使えない',broken:'破損したZIP',unsupported:'対応外のZIP',limit:'上限を超えたZIP',noTarget:'VALORANTデータなし',unreadable:'対象データを解析できない'};
+const errors = {
+  broken:['ZIPを開けませんでした','ファイルが破損している可能性があります。ダウンロードし直すか、別のZIPを選んでください。'],
+  unsupported:['対応していないZIP形式です','Riotからダウンロードした元のZIPを選んでください。'],
+  limit:['読み込める上限を超えました','この例では展開するデータ量が上限を超えています。'],
+  noTarget:['VALORANTの対象データが見つかりません','Riotから受け取ったVALORANTの記録を含むZIPを選んでください。'],
+  unreadable:['対象データを読み込めません','対象ファイルは見つかりましたが、解析できませんでした。別のZIPを選んでください。']
+};
+const dates = [8,11,10,13,9,14];
+const matches = dates.flatMap((n,i)=>Array.from({length:n},(_,j)=>({month:i+1,date:`2025/${String(i+1).padStart(2,'0')}/${String(2+j).padStart(2,'0')} 20:30`,mode:modes[j%5<3?0:j%5===3?1:2],result:j%9===8?'不明':j%2===0?'勝ち':'負け',min:j%5===4?12+j%4:24+(i*3+j*7)%18}))).reverse();
+const otherMatches = [{month:6,date:'2025/06/18 19:35',mode:'カスタム',result:'不明',min:19},{month:3,date:'2025/03/20 20:10',mode:'射撃場',result:'対象外',min:8}];
+const charges = [{month:6,date:'2025/06/11 22:03',currency:'JPY',amount:3800,vp:3650},{month:5,date:'2025/05/19 18:21',currency:'USD',amount:9.99,vp:1000},{month:4,date:'2025/04/15 18:02',currency:'JPY',amount:2400,vp:2050},{month:2,date:'2025/02/05 12:20',currency:'JPY',amount:1200,vp:1000}];
+const purchases = [{date:'2025/06/12 20:15',name:'サンプルスキン A',amount:'1,775 VP',kind:'購入'},{date:'2025/05/28 21:06',name:'サンプルギフト B',amount:'未記録',kind:'ギフト'},{date:'2025/04/16 19:00',name:'サンプルスプレー C',amount:'2,000 KC',kind:'アンロック'},{date:'2025/04/15 20:15',name:'サンプルスキン D',amount:'875 VP',kind:'購入'}];
+const reasons=[['チート行為',8],['味方への妨害',4],['テキストチャットでの迷惑行為',3],['SAMPLE_OTHER',2]];
+const state = {view:'home',data:null,error:null,loading:null,scope:'match',months:'all',mode:'all',currency:'JPY',points:{}};
+let timers=[];
+const num = n => n.toLocaleString('ja-JP');
+const money = (n,c) => new Intl.NumberFormat('ja-JP',{style:'currency',currency:c,currencyDisplay:c==='JPY'?'symbol':'code'}).format(n);
+const btn = (action, text, cls='', extra='') => `<button type="button" data-action="${action}" class="${cls}" ${extra}>${text}</button>`;
+const brand = () => `<div class="brand"><span class="mark">${icon('brand')}</span><div><strong>VALORANT プレイヤー分析</strong><small>非公式ダッシュボード</small></div></div>`;
+const nav = (keys,cls='') => `<nav class="${cls}" aria-label="画面ナビゲーション">${keys.map(key=>btn(`go:${key}`,`${icon(key)}<span>${titles[key]}</span>`,'',(state.view===key||cls==='bottom'&&key==='more'&&['reports','payment','store'].includes(state.view))?'aria-current="page"':'')).join('')}</nav>`;
+const badge = () => `<span class="badge">${state.data==='demo'?'サンプルデータ':'模擬読み込み・サンプルデータ'}</span>`;
+const heading = (title,info='')=>`<div class="headline"><h1 id="page-title" tabindex="-1">${title}</h1>${info?`<p class="muted">${info}</p>`:''}${badge()}</div>`;
+const focusTitle = (scroll=true) => { if(scroll) window.scrollTo(0,0); document.querySelector('#page-title')?.focus({preventScroll:true}); };
+const errorBlock = () => state.error?`<div class="alert" role="alert"><strong>${errors[state.error][0]}</strong><p>${errors[state.error][1]}${state.data?' 前の表示はそのままです。':''}</p>${state.data?`<div class="actions">${btn('open','別のZIPを選ぶ','secondary')}${btn('dismiss','閉じる')}</div>`:''}</div>`:'';
+function intro(){return `<div class="intro"><section class="intro-card"><p class="eyebrow">RIOTの開示データを、手元で確認</p><h1 id="page-title" tabindex="-1">あなたのプレー記録を<br>スマホで見よう。</h1><p class="muted">Riot Gamesから受け取ったZIPを選ぶだけ。対戦、通報、課金、ストア取引を日本語で確認できます。</p><div class="actions">${btn('open',`${icon('upload')} ${state.error?'別のZIPを選ぶ':'ZIPを開く'}`,'primary')}${btn('demo','デモを見る','secondary')}</div><div class="instructions"><strong>${icon('shield')} 解凍不要・ファイルは送信されません</strong><small>端末の「ファイル」や「ダウンロード」からZIPを選びます。この試作は架空データで画面だけを確認できます。</small><small class="pc-only">完成版ではPCのドラッグ＆ドロップにも対応予定です。</small></div></section><p class="muted footer-note">Riot Gamesの公式サービスではありません</p></div>`;}
+const detail = (key,label='詳細を見る') => btn(`go:${key}`,`${label} ›`,'',`aria-label="${titles[key]}の${label}"`);
+const card = (title, body, link='') => `<section class="card"><div class="card-head"><h2>${title}</h2>${link}</div>${body}</section>`;
+const empty = text => `<p class="empty">${text}</p>`;
+function metrics(rows){
+ const wins=rows.filter(x=>x.mode===modes[0]&&['勝ち','負け'].includes(x.result));
+ const min=rows.reduce((a,x)=>a+x.min,0);
+ const time=`${Math.floor(min/60)}<small>時間</small>${min%60}<small>分</small>`;
+ const rate=wins.length?`${(100*wins.filter(x=>x.result==='勝ち').length/wins.length).toFixed(1)}%`:'<small>データなし</small>';
+ return `<dl class="metrics">${[['target','対戦数',num(rows.length)],['play','合計試合時間',time],['trophy','コンペ勝率',rate]].map(([i,k,v])=>`<div class="card metric"><dt>${icon(i)}${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
+}
+function chart(rows,key,kind='match',currency='JPY'){
+ const months=Array.from({length:6},(_,i)=>i+1);
+ const values=months.map(m=>rows.filter(x=>x.month===m).reduce((a,x)=>a+(kind==='match'?1:x.amount),0));
+ const mins=months.map(m=>rows.filter(x=>x.month===m).reduce((a,x)=>a+(x.min??0),0));
+ const x=i=>40+i*56;
+ const y=(v,max)=>122-(v/max)*94;
+ const max=Math.max(2, Math.ceil(Math.max(...values)/2)*2);
+ const maxMin=Math.max(120,Math.ceil(Math.max(...mins)/120)*120);
+ const line=values.map((v,i)=>`${x(i)},${y(v,max)}`).join(' ');
+ const hours=mins.map((v,i)=>`${x(i)},${y(v,maxMin)}`).join(' ');
+ const current=state.points[key]??5;
+ const matchAxes=kind==='match'?`<g font-size="11" fill="#245eb6"><text x="2" y="14">件</text>${[max,max/2,0].map(t=>`<text x="2" y="${y(t,max)+4}">${t}</text>`).join('')}</g><g text-anchor="end" font-size="11" fill="#4b5d76"><text x="364" y="14">時間</text>${[maxMin,maxMin/2,0].map(t=>`<text x="364" y="${y(t,maxMin)+4}">${t/60}</text>`).join('')}</g>`:'';
+ return `<svg class="chart" viewBox="0 0 366 134" preserveAspectRatio="none" aria-hidden="true">${[28,75,122].map(n=>`<path d="M24 ${n}H336" stroke="#dce5f1"/>`).join('')}${matchAxes}${kind==='match'?`<polygon points="${x(0)},122 ${hours} ${x(5)},122" fill="#e1edff"/><polyline points="${hours}" fill="none" stroke="#79a5e2" stroke-width="2"/><polyline points="${line}" fill="none" stroke="#2865c2" stroke-width="2.5"/>${values.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v,max)}" r="${i===current?5:3.5}" fill="#2865c2"/>`).join('')}`:values.map((v,i)=>`<rect x="${x(i)-12}" y="${y(v,max)}" width="24" height="${122-y(v,max)}" rx="3" fill="${i===current?'#2865c2':'#a1bfee'}"/>`).join('')}</svg><div class="months" role="group" aria-label="月を選択">${months.map((m,i)=>btn(`point:${key}:${i}`,`${m}月`,'',`aria-pressed="${i===current}"`)).join('')}</div><output class="chart-value" aria-live="polite">${months[current]}月 · ${kind==='match'?`対戦 ${values[current]} 件 ／ 試合時間 ${Math.floor(mins[current]/60)}時間${mins[current]%60}分`:money(values[current],currency)}</output>`;
+}
+function modeChart(rows){
+ if(!rows.length)return empty('表示できる対戦がありません。');
+ const mix=Object.entries(Object.groupBy ? Object.groupBy(rows,m=>m.mode) : rows.reduce((a,m)=>((a[m.mode]??=[]).push(m),a),{})).sort((a,b)=>b[1].length-a[1].length);
+ let start=0;const stops=mix.map(([,set],i)=>{let a=start;start+=100*set.length/rows.length;return `${colors[i]} ${a}% ${start}%`;});
+ return `<div class="mode-layout"><div class="ring" style="background:conic-gradient(${stops.join(',')})" aria-hidden="true"></div><ul class="legend">${mix.map(([m,set],i)=>`<li><span class="dot" style="background:${colors[i]}" aria-hidden="true"></span>${m}<strong>${(100*set.length/rows.length).toFixed(1)}%</strong></li>`).join('')}</ul></div>`;
+}
+const matchList = rows => rows.length?`<ul class="rows">${rows.map(m=>`<li><div><strong>${m.mode}</strong><small>${m.date}</small></div><div class="end"><strong class="${m.result==='勝ち'?'win':m.result==='負け'?'loss':''}">${m.result}</strong><small>${m.min} 分</small></div></li>`).join('')}</ul>`:empty('条件に一致する試合がありません。フィルターを変更してください。');
+const totals = (...items) => `<dl class="totals">${items.map(([label,value])=>`<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>`;
+const reportTotals = () => totals(['送った通報','17 件'],['受けた通報','データなし']);
+const paymentTotals = () => totals(['支払額',`<span>${money(7400,'JPY')}</span><span>${money(9.99,'USD')}</span>`],['決済回数',`${charges.length} 回`]);
+const storeTotals = () => totals(['ゲーム内通貨の消費量','<span>2,650 VP</span><span>2,000 KC</span>'],['取引件数',`${purchases.length} 件`]);
+const storeUnavailable = 'ZIPにストア取引データが収録されていません。';
+const paymentUnavailable = 'ZIPの決済履歴を読み込めませんでした。';
+function home(){return `${heading('プレーの概要',`最終プレー ${matches[0].date}（架空例）`)}${metrics(matches)}<div class="cards home-grid">${card('プレー推移',`<p class="muted">対戦数（濃い青）・試合時間（薄い青）</p>${chart(matches,'home')}`,detail('play'))}${card('モード別の内訳',modeChart(matches))}${card('通報',`${reportTotals()}<div class="segment" aria-hidden="true">${[47,24,18,11].map((w,i)=>`<span style="width:${w}%;background:${[...colors,'#dfebfa'][i]}"></span>`).join('')}</div>`,detail('reports'))}${card('課金',state.data==='partial'?empty(paymentUnavailable):paymentTotals(),detail('payment'))}${card('ストア取引',state.data==='partial'?empty(storeUnavailable):storeTotals(),detail('store'))}${card('最近の試合',matchList(matches.slice(0,3)),detail('play','試合一覧を見る'))}</div>`;}
+function select(key,label,entries){return `<label>${label}<select data-filter="${key}">${entries.map(([k,v])=>`<option value="${k}" ${state[key]===k?'selected':''}>${v}</option>`).join('')}</select></label>`;}
+function play(){
+ const modeOptions=state.scope==='match'?modes:['カスタム','射撃場','チュートリアル'];
+ const filtered=(state.scope==='match'?matches:otherMatches).filter(m=>(state.months==='all'||m.month>=4)&&(state.mode==='all'||m.mode===state.mode));
+ return `${heading('プレー記録','試合の推移・モード別内訳・明細')}${card('絞り込み',`<div class="filters">${select('scope','記録の種類',[['match','マッチメイキング'],['other','その他のプレー']])}${select('months','期間',[['all','全期間'],['recent','4月〜6月']])}${select('mode','モード',[['all','すべて'],...modeOptions.map(m=>[m,m])])}${btn('reset','リセット','secondary')}</div>`)}<div class="cards">${metrics(filtered)}<div class="cols">${card('月別の対戦数・試合時間',filtered.length?chart(filtered,'play'):empty('表示できる月別データがありません。'))}${card('モード別の内訳',modeChart(filtered))}</div>${card('試合一覧',`<p class="muted">${filtered.length} 件${filtered.length>8?'（新しい順に先頭8件を表示）':''}</p>${matchList(filtered.slice(0,8))}`)}</div>`;
+}
+function reports(){return `${heading('通報','ZIPに収録された集計です。試合の期間フィルターは適用されません。')}<div class="cols">${card('送った通報',`<p><strong>17 件</strong></p><ul class="rows">${reasons.map(([reason,n])=>`<li><span>${reason}</span><strong>${n} 件</strong></li>`).join('')}</ul>`)}${card('受けた通報',empty('データなし（件数は記録されていません）。'))}</div>`;}
+function payment(){return `${heading('課金','支払額は通貨ごとに表示します。')}${state.data==='partial'?card('決済履歴',empty(paymentUnavailable)):`${card('課金の概要',paymentTotals())}<div class="cards">${card('月別の支払額',`<div class="filters">${select('currency','グラフの通貨',[['JPY','日本円（JPY）'],['USD','米ドル（USD）']])}</div>${chart(charges.filter(c=>c.currency===state.currency),'payment','payment',state.currency)}`)}${card('決済明細',`<ul class="rows">${charges.map(c=>`<li><div><strong>${money(c.amount,c.currency)}</strong><small>${c.date}</small></div><div class="end"><strong>${num(c.vp)} VP</strong><small>付与</small></div></li>`).join('')}</ul>`)}</div>`}`;}
+function store(){return `${heading('ストア取引','消費量が未記録の取引も明細に表示します。')}${state.data==='partial'?card('取引履歴',empty(storeUnavailable)):`${card('ストア取引の概要',storeTotals())}<div class="cards">${card('取引明細',`<ul class="rows">${purchases.map(p=>`<li><div><strong>${p.name}</strong><small>${p.date} · ${p.kind}</small></div><strong class="end">${p.amount}</strong></li>`).join('')}</ul>`)}</div>`}`;}
+function more(){return `${heading('その他','カテゴリ別の詳細とデータ管理')}<div class="cols">${card('カテゴリ',`<div class="menu">${['reports','payment','store'].map(k=>btn(`go:${k}`,`${icon(k)}${titles[k]}<span aria-hidden="true">›</span>`)).join('')}</div>`)}${card('データ管理',`<p class="muted">開いたデータはページを閉じるか、消去するまでこの画面に表示されます。</p><div class="actions">${btn('open','別のZIPを開く','secondary')}${btn('clear','表示データを消去','danger')}</div>`)}</div>`;}
+function loading(){return `<div class="loading-wrap card"><h1 id="page-title" tabindex="-1">読み込み中</h1><div class="progress" aria-hidden="true"></div><p id="phase" role="status">${phases[0]}</p><p class="muted">試作での模擬処理です。実際のファイルは開きません。</p><div class="actions">${btn('cancel-load','読み込みを取り消す','secondary')}</div></div>`;}
+const views={home,play,reports,payment,store,more};
+function render(){
+ const active=Boolean(state.data&&!state.loading);
+ app.classList.toggle('loaded',active);
+ app.innerHTML=`<header class="top"><div class="top-in">${brand()}<span class="badge">画面試作</span></div></header>${active?`<aside class="rail">${brand()}${nav(['home','play','reports','payment','store','more'])}<small class="footer-note">Riot Gamesの公式サービスではありません</small></aside>`:''}<div class="body"><main>${errorBlock()}${state.loading?loading():active?`${state.data==='partial'&&state.view==='home'?'<div class="status" role="status">一部のデータを表示できません。読めたカテゴリを表示しています。</div>':''}${views[state.view]()}`:intro()}</main></div>${active?nav(['home','play','more'],'bottom'):''}`;
+}
+function openDialog(clear=false){
+ dialog.innerHTML=clear?`<h2 id="dialog-title">表示データを消去しますか？</h2><p>画面に表示しているデータを消去します。端末に保存した元のZIPは削除しません。</p><div class="actions">${btn('close','戻る','secondary','autofocus')}${btn('confirm-clear','消去する','danger')}</div>`:`<h2 id="dialog-title">ZIP選択の画面を試す</h2><p class="muted">試作ではファイルを開きません。確認したい結果を選んでください。</p><div class="menu">${Object.entries(scenarios).map(([key,label])=>btn(`load:${key}`,label)).join('')}</div>${btn('close','ファイル選択をキャンセル','secondary')}`;
+ dialog.showModal();
+}
+function resetFilters(){Object.assign(state,{scope:'match',months:'all',mode:'all'});}
+function choose(data){Object.assign(state,{view:'home',data,error:null,loading:null,currency:'JPY',points:{}});resetFilters();render();focusTitle();}
+function stopTimers(){timers.forEach(clearTimeout);timers=[];}
+function startLoad(result){
+ dialog.close();state.error=null;state.loading=result;render();focusTitle();
+ for(let i=1;i<phases.length;i++)timers.push(setTimeout(()=>{document.querySelector('#phase').textContent=phases[i];},i*600));
+ timers.push(setTimeout(()=>{stopTimers();state.loading=null;if(errors[result]){state.error=result;render();focusTitle();}else choose(result);},1900));
+}
+function redraw(selector){render();document.querySelector(selector)?.focus({preventScroll:true});}
+app.addEventListener('change',e=>{const key=e.target.dataset.filter;if(!key)return;state[key]=e.target.value;if(key==='scope')state.mode='all';redraw(`[data-filter="${key}"]`);});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button[data-action]');if(!b)return;
+ const [action,arg,point]=b.dataset.action.split(':');
+ if(action==='open')openDialog();
+ if(action==='clear')openDialog(true);
+ if(action==='close')dialog.close();
+ if(action==='confirm-clear'){dialog.close();choose(null);}
+ if(action==='demo')choose('demo');
+ if(action==='load')startLoad(arg);
+ if(action==='cancel-load'){stopTimers();state.loading=null;render();focusTitle();}
+ if(action==='dismiss'){state.error=null;render();focusTitle(false);}
+ if(action==='go'){state.view=arg;render();focusTitle();}
+ if(action==='reset'){resetFilters();redraw('[data-action="reset"]');}
+ if(action==='point'){state.points[arg]=Number(point);redraw(`[data-action="${b.dataset.action}"]`);}
+});
+render();
+</script>
+</body>
+</html>
