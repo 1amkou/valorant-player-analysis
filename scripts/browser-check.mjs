@@ -107,6 +107,7 @@ try {
     await send('Emulation.setDeviceMetricsOverride',{width,height:800,deviceScaleFactor:1,mobile:false});
     await fit(width);await click('go:guide','main');await check('Riot公式のデータ申請ページ');await check('中だけで読み取り・集計');await check('外部のサーバーへ送信されることはありません');
     assert.equal(await evalJS(`document.querySelector('.guide-link').href`),'https://support.riotgames.com/ja-jp/riot/data-request');
+    assert.equal(await evalJS(`document.querySelector('.guide-view a[href*="github.com"]')?.href`),'https://github.com/1amkou/valorant-player-analysis');
     if(width<1024){await click('toggle-menu');assert(await evalJS(`!document.querySelector('#mobile-menu').hidden`));await click('go:home','.top-in');}
     else await evalJS(`history.back()`);
     await waitFor(()=>evalJS(`!!document.querySelector('.intro [data-action=demo]')`),'return from guide');

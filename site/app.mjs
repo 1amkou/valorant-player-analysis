@@ -26,6 +26,7 @@ const announce = document.querySelector('#announce');
 const pages = ['home','play','reports','payment','store','voice','guide'];
 const homePages = ['reports', 'payment', 'store', 'voice', 'guide'];
 const requestUrl = () => currentLang() === 'en' ? 'https://support.riotgames.com/en-us/riot/data-request' : 'https://support.riotgames.com/ja-jp/riot/data-request';
+const repoUrl = 'https://github.com/1amkou/valorant-player-analysis';
 // Lucide (ISC) icons for navigation and actions; the site logo is a separate image.
 const icons = {
   home:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />',
@@ -382,7 +383,7 @@ function guide(){
   const steps=`<ol class="guide-steps"><li><h3>${t('guide.step1.title')}</h3><p>${t('guide.step1.copy')}</p><a class="button secondary guide-link" href="${requestUrl()}" target="_blank" rel="noopener noreferrer">${t('guide.step1.link')} ${icon('next')}</a></li><li><h3>${t('guide.step2.title')}</h3><p>${t('guide.step2.copy')}</p></li><li><h3>${t('guide.step3.title')}</h3><p>${t('guide.step3.copy')}</p>${button('open',`${icon('upload')} ${t('guide.step3.button')}`,'secondary')}</li></ol>`;
   return `<div class="guide-view">${heading(title('guide'),t('guide.info'))}
     ${card(t('guide.section.title'),steps)}
-    <div class="cards">${card(t('guide.privacy.title'),`<p><strong>${t('guide.privacy.1')}</strong></p><p>${t('guide.privacy.2')}</p><p>${t('guide.privacy.3')}</p><p>${t('guide.privacy.4')}</p><p>${t('guide.privacy.5')}</p>`)}</div></div>`;
+    <div class="cards">${card(t('guide.privacy.title'),`<p><strong>${t('guide.privacy.1')}</strong></p><p>${t('guide.privacy.2')}</p><p>${t('guide.privacy.source')} <a href="${repoUrl}" target="_blank" rel="noopener noreferrer">${t('guide.privacy.sourceLink')}</a></p><p>${t('guide.privacy.3')}</p><p>${t('guide.privacy.4')}</p><p>${t('guide.privacy.5')}</p>`)}</div></div>`;
 }
 
 function more() {
