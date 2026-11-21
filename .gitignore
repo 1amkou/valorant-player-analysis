@@ -12,3 +12,5 @@ local-data/
 *.[jJ][sS][oO][nN]
 !/package.json
 !/package-lock.json
+# Source logo provided locally; the downscaled copy ships in site/assets/.
+/nisyon.png

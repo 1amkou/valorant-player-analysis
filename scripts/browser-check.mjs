@@ -10,7 +10,7 @@ import {fileURLToPath} from 'node:url';
 // Set VALORANT_CHROME (or pass the binary as argv[2]) on the OS running Node.
 const chromium = process.argv[2] || process.env.VALORANT_CHROME || (process.platform==='win32'
   ? path.join(process.env.ProgramFiles ?? 'C:\\Program Files','Google','Chrome','Application','chrome.exe') : 'chromium');
-const mime={'fonts/inter.woff2':'font/woff2','fonts/notosansjp.woff2':'font/woff2','assets/jett.png':'image/png','index.html':'text/html; charset=utf-8','app.mjs':'text/javascript; charset=utf-8','styles.css':'text/css; charset=utf-8',
+const mime={'fonts/inter.woff2':'font/woff2','fonts/notosansjp.woff2':'font/woff2','assets/jett.png':'image/png','assets/nisyon.png':'image/png','index.html':'text/html; charset=utf-8','app.mjs':'text/javascript; charset=utf-8','styles.css':'text/css; charset=utf-8',
   'lib/data.mjs':'text/javascript; charset=utf-8','lib/demo.mjs':'text/javascript; charset=utf-8','zip-worker.mjs':'text/javascript; charset=utf-8',
   ...Object.fromEntries(['item-label','item-catalog','item-name-key','storage','i18n'].map(file=>[`lib/${file}.mjs`,'text/javascript; charset=utf-8']))};
 const hit=[];

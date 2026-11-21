@@ -26,9 +26,8 @@ const announce = document.querySelector('#announce');
 const pages = ['home','play','reports','payment','store','voice','guide'];
 const homePages = ['reports', 'payment', 'store', 'voice', 'guide'];
 const requestUrl = () => currentLang() === 'en' ? 'https://support.riotgames.com/en-us/riot/data-request' : 'https://support.riotgames.com/ja-jp/riot/data-request';
-// Lucide (ISC), with a separate Valorant mark.
+// Lucide (ISC) icons for navigation and actions; the site logo is a separate image.
 const icons = {
-  brand:'<path fill="currentColor" stroke="none" d="M2 3v8.2l9.3 9.3h6.2L2 3Zm20 0-8.5 9.7h6.7l1.8-1.8V3Z"/>',
   home:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />',
   play:'<circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />',
   more:'<circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />',
@@ -68,7 +67,7 @@ const card = (title, html, link = '', classes = '') => `<section class="card ${c
 const category = key => state.dataset?.[key];
 const isReady = key => category(key)?.status === 'ready';
 const rows = key => isReady(key) ? category(key).value : [];
-const brand = () => `<div class="brand"><span class="mark">${icon('brand')}</span><div><strong>VALORANT</strong><small>Player Analytics</small></div></div>`;
+const brand = () => `<div class="brand"><span class="mark"><img src="./assets/nisyon.png" alt="" width="32" height="32"></span><div><strong>VALORANT</strong><small>Player Analytics</small></div></div>`;
 const title = key => t('nav.' + key);
 const detail = (key, label = t('detail.view'), action = `go:${key}`) => button(action, `${label}${icon('next')}`, 'text-button', `aria-label="${t('detail.aria', {title: title(key), label})}"`);
 const badge = () => state.demo ? `<span class="badge sample">${t('badge.sample')}</span>` : '';
