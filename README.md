@@ -3,6 +3,7 @@
 **日本語** · [English](README.en.md)
 
 Riot Gamesから受け取ったVALORANTの開示ZIPを解凍せず、プレー記録・通報・課金・ストア取引を日本語で見る静的サイトです。データは端末内で処理し、外へ送信しません。再読み込みに備えて表示用データをブラウザ内に保存します。共有端末では利用後に消去してください。Riot Gamesの公式サービスではありません。
+GitHub Pages：https://1amkou.github.io/valorant-player-analysis/
 
 ## ローカルで動かす
 
